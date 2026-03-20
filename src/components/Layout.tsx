@@ -1,0 +1,58 @@
+import { Outlet, Link } from "react-router-dom";
+import Button from "./Button";
+import { useAuthStore } from "../store/authStore";
+
+const Layout = () => {
+  const { user, signOut, loading } = useAuthStore();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Left side - Logo */}
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center gap-3">
+                <span className="font-semibold text-xl tracking-wide text-[#1769ff]">
+                  LANGRPROS
+                </span>
+              </Link>
+            </div>
+
+            {/* Right side - User info & Logout */}
+            <div className="flex items-center gap-4">
+              {user && !loading && (
+                <span className="text-sm text-gray-600 hidden sm:block">
+                  {user.email}
+                </span>
+              )}
+              <Button
+                variant="secondary"
+                onClick={handleSignOut}
+                disabled={loading}
+              >
+                {loading ? "Signing out..." : "Sign out"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
+export default Layout;
