@@ -1,6 +1,7 @@
 
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import Loading from "./Loading";
 import type { UserRole } from "../lib/supabase";
 
 interface ProtectedRouteProps {
@@ -14,8 +15,9 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   // Show loading while checking session
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        Loading...
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-[#1769ff]">
+        <Loading className="h-8 w-8" />
+        <span className="text-gray-600 font-xs">Initializing session...</span>
       </div>
     );
   }
