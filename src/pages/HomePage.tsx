@@ -122,7 +122,7 @@ function HomePage() {
                 {...register("email")}
                 error={errors.email?.message}
                 placeholder="hello@example.com"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1769ff]/20 focus:border-[#1769ff] transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] transition-all"
               />
             </div>
 
@@ -139,7 +139,7 @@ function HomePage() {
                 {...register("password")}
                 error={errors.password?.message}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1769ff]/20 focus:border-[#1769ff] transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none  focus:ring-[#1769ff]/20 focus:border-[#1769ff] transition-all"
               />
             </div>
 

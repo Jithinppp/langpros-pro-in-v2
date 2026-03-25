@@ -1,6 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
-import Button from "./Button";
 import { useAuthStore } from "../store/authStore";
+import Button from "./Button";
 
 const Layout = () => {
   const { user, signOut, loading } = useAuthStore();
@@ -22,7 +22,7 @@ const Layout = () => {
             {/* Left side - Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center gap-3">
-                <span className="font-semibold text-xl tracking-wide text-[#1769ff]">
+                <span className="font-semibold text-xl tracking-wider text-primary">
                   LANGRPROS
                 </span>
               </Link>
@@ -36,6 +36,7 @@ const Layout = () => {
                 </span>
               )}
               <Button
+                size="md"
                 variant="secondary"
                 onClick={handleSignOut}
                 disabled={loading}

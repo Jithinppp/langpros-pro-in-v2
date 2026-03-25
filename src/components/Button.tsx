@@ -18,13 +18,13 @@ const Button = ({
   ...props
 }: ButtonProps) => {
   const baseStyles =
-    "inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none focus:ring-1 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
     primary:
-      "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 active:bg-blue-800",
+      "bg-[#1769ff] text-white hover:bg-[#1255d4] focus:ring-[#1769ff] active:bg-[#0e47b5]",
     secondary:
-      "text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1769ff] disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+      "text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-offset-2 focus:ring-[#1769ff] disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
     danger:
       "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800",
     ghost:
