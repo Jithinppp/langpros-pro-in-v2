@@ -49,7 +49,9 @@ function HomePage() {
       console.log("🔐 Signing in via Zustand store...");
       await signIn(data.email, data.password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred",
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -59,7 +61,7 @@ function HomePage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#1769ff] p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-1/2 bg-primary p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3 text-white">
             <span className="font-semibold text-xl tracking-wide">
@@ -90,7 +92,7 @@ function HomePage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-10">
-            <div className="flex items-center gap-3 text-[#1769ff]">
+            <div className="flex items-center gap-3 text-primary">
               <span className="font-semibold text-xl tracking-wide">
                 LANGRPROS
               </span>
@@ -122,7 +124,7 @@ function HomePage() {
                 {...register("email")}
                 error={errors.email?.message}
                 placeholder="hello@example.com"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
 
@@ -139,7 +141,7 @@ function HomePage() {
                 {...register("password")}
                 error={errors.password?.message}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none  focus:ring-[#1769ff]/20 focus:border-[#1769ff] transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none  focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
 
@@ -153,8 +155,6 @@ function HomePage() {
               Sign in
             </Button>
           </form>
-
-
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 {
-  "name": "langpros-pro-in-v2",
+  "name": "langpros-pro-inventory",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "LangPros Pro - Modern Inventory Management System built with React, TypeScript, and Supabase",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
