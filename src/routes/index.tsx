@@ -12,10 +12,10 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 // inventory-manager pages
 import InventoryManagerDashboard from "../pages/inventory-manager/InventoryManagerDashboard";
 import AddEquipment from "../pages/inventory-manager/AddEquipment";
-import AddCategory from "../pages/inventory-manager/AddCategory";
-import AddSubcategory from "../pages/inventory-manager/AddSubcategory";
-import AddModel from "../pages/inventory-manager/AddModel";
 import AddStorageLocation from "../pages/inventory-manager/AddStorageLocation";
+import ManageCategories from "../pages/inventory-manager/ManageCategories";
+import ManageSubcategories from "../pages/inventory-manager/ManageSubcategories";
+import ManageModels from "../pages/inventory-manager/ManageModels";
 import Equipments from "../pages/inventory-manager/Equipments";
 import SingleEquipment from "../pages/inventory-manager/SingleEquipment";
 import Reports from "../pages/inventory-manager/Reports";
@@ -69,9 +69,9 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <InventoryManagerDashboard /> },
           { path: "add-equipment", element: <AddEquipment /> },
-          { path: "add-category", element: <AddCategory /> },
-          { path: "add-subcategory", element: <AddSubcategory /> },
-          { path: "add-model", element: <AddModel /> },
+          { path: "manage-categories", element: <ManageCategories /> },
+          { path: "manage-subcategories", element: <ManageSubcategories /> },
+          { path: "manage-models", element: <ManageModels /> },
           { path: "add-storage-location", element: <AddStorageLocation /> },
           { path: "equipments", element: <Equipments /> },
           { path: "equipments/:id", element: <SingleEquipment /> },

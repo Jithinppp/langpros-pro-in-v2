@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,6 +13,7 @@ import { supabase } from "../../lib/supabase";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 import Loading from "../../components/Loading";
+import { useEquipmentStore } from "../../store/equipmentStore";
 import {
   ChevronLeft,
   ChevronDown,
@@ -53,27 +54,44 @@ export default function AddEquipment() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
 
-  // Get params from URL to preserve state
+  // Use Zustand store for form state
+  const {
+    categoryId,
+    subcategoryId,
+    modelId,
+    serialNumber,
+    storageLocationId,
+    condition,
+    status,
+    description,
+    purchaseDate,
+    warrantyExpiry,
+    hasWarranty,
+    generatedSku,
+    isSubmitting,
+    errors,
+    submitError,
+    setCategoryId,
+    setSubcategoryId,
+    setModelId,
+    setSerialNumber,
+    setStorageLocationId,
+    setCondition,
+    setStatus,
+    setDescription,
+    setPurchaseDate,
+    setWarrantyExpiry,
+    setHasWarranty,
+    setGeneratedSku,
+    setIsSubmitting,
+    setErrors,
+    setSubmitError,
+  } = useEquipmentStore();
+
+  // Get params from URL to initialize or preserve state
   const categoryFromUrl = searchParams.get("category") || "";
   const subcategoryFromUrl = searchParams.get("subcategory") || "";
   const modelFromUrl = searchParams.get("model") || "";
-
-  // Form state - controlled by user selection or URL params
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [subcategoryId, setSubcategoryId] = useState<string>("");
-  const [modelId, setModelId] = useState<string>("");
-  const [serialNumber, setSerialNumber] = useState("");
-  const [storageLocationId, setStorageLocationId] = useState<string>("");
-  const [condition, setCondition] = useState("excellent");
-  const [status, setStatus] = useState("available");
-  const [description, setDescription] = useState("");
-  const [purchaseDate, setPurchaseDate] = useState("");
-  const [warrantyExpiry, setWarrantyExpiry] = useState("");
-  const [hasWarranty, setHasWarranty] = useState(false);
-  const [generatedSku, setGeneratedSku] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitError, setSubmitError] = useState<string>("");
 
   // Condition options
   const conditionOptions = [
@@ -355,7 +373,7 @@ export default function AddEquipment() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-3xl mx-auto px-6 py-10 animate-in fade-in duration-500">
+      <div className="max-w-4xl mx-auto px-6 py-10 animate-in fade-in duration-500">
         {/* Breadcrumb and Title */}
         <Link
           to="/inventory-manager"
@@ -407,7 +425,7 @@ export default function AddEquipment() {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                   >
-                    <ListboxOptions className="absolute z-10 mt-1 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                       {categories.length === 0 ? (
                         <div className="px-4 py-2 text-sm text-gray-500">
                           No categories found
@@ -448,14 +466,14 @@ export default function AddEquipment() {
               </Listbox>
             </div>
 
-            {/* Add Category Button */}
+            {/* Manage Categories Button */}
             <div className="mt-3">
               <Link
-                to="/inventory-manager/add-category"
+                to="/inventory-manager/manage-categories"
                 className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
               >
                 <Plus className="w-4 h-4" />
-                Add Category
+                Manage Category
               </Link>
             </div>
 
@@ -507,7 +525,7 @@ export default function AddEquipment() {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                   >
-                    <ListboxOptions className="absolute z-10 mt-1 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                       {subcategories.length === 0 ? (
                         <div className="px-4 py-2 text-sm text-gray-500">
                           No subcategories found
@@ -548,18 +566,14 @@ export default function AddEquipment() {
               </Listbox>
             </div>
 
-            {/* Add Subcategory Button */}
+            {/* Manage Subcategories Button */}
             <div className="mt-3">
               <Link
-                to={
-                  effectiveCategoryId
-                    ? `/inventory-manager/add-subcategory?category=${encodeURIComponent(categories.find((c) => c.id === effectiveCategoryId)?.name || "")}`
-                    : "/inventory-manager/add-subcategory"
-                }
-                className={`inline-flex items-center gap-1 text-sm font-medium ${effectiveCategoryId ? "text-[#1769ff] hover:text-[#1255d4]" : "text-gray-400 cursor-not-allowed"}`}
+                to="/inventory-manager/manage-subcategories"
+                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
               >
                 <Plus className="w-4 h-4" />
-                Add Subcategory
+                Manage Subcategory
               </Link>
             </div>
 
@@ -607,7 +621,7 @@ export default function AddEquipment() {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                   >
-                    <ListboxOptions className="absolute z-10 mt-1 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                       {models.length === 0 ? (
                         <div className="px-4 py-2 text-sm text-gray-500">
                           No models found
@@ -648,18 +662,14 @@ export default function AddEquipment() {
               </Listbox>
             </div>
 
-            {/* Add Model Button */}
+            {/* Manage Models Button */}
             <div className="mt-3">
               <Link
-                to={
-                  effectiveSubcategoryId
-                    ? `/inventory-manager/add-model?category=${encodeURIComponent(categories.find((c) => c.id === effectiveCategoryId)?.name || "")}&subcategory=${encodeURIComponent(subcategories.find((s) => s.id === effectiveSubcategoryId)?.name || "")}`
-                    : "/inventory-manager/add-model"
-                }
-                className={`inline-flex items-center gap-1 text-sm font-medium ${effectiveSubcategoryId ? "text-[#1769ff] hover:text-[#1255d4]" : "text-gray-400 cursor-not-allowed"}`}
+                to="/inventory-manager/manage-models"
+                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
               >
                 <Plus className="w-4 h-4" />
-                Add Model
+                Manage Model
               </Link>
             </div>
 
@@ -750,7 +760,7 @@ export default function AddEquipment() {
                       leaveFrom="opacity-100"
                       leaveTo="opacity-0"
                     >
-                      <ListboxOptions className="absolute z-10 mt-1 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         {storageLocations.length === 0 ? (
                           <div className="px-4 py-1 text-sm text-gray-500">
                             No locations found
@@ -825,7 +835,7 @@ export default function AddEquipment() {
                       leaveFrom="opacity-100"
                       leaveTo="opacity-0"
                     >
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         {conditionOptions.map((cond) => (
                           <ListboxOption
                             key={cond.value}

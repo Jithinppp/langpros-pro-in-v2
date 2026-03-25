@@ -40,6 +40,7 @@ export default function SingleEquipment() {
   const [editError, setEditError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Edit form state
   const [editSerialNumber, setEditSerialNumber] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editCondition, setEditCondition] = useState("");
@@ -57,9 +58,11 @@ export default function SingleEquipment() {
       const { data, error } = await supabase
         .from("assets")
         .select(
-          `*,
+          `
+          *,
           models:model_id(name, brand, code),
-          storage_locations:location(name)`
+          storage_locations:location(name)
+        `,
         )
         .eq("id", id)
         .single();
@@ -70,6 +73,7 @@ export default function SingleEquipment() {
     enabled: !!id,
   });
 
+  // Fetch storage locations for dropdown
   const { data: storageLocations = [] } = useQuery({
     queryKey: ["storage_locations"],
     queryFn: async () => {
@@ -94,32 +98,6 @@ export default function SingleEquipment() {
     onError: (err: Error) => {
       setDeleteError(err.message || "Failed to delete equipment");
       setShowDeleteModal(false);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No asset ID");
-      const { error } = await supabase
-        .from("assets")
-        .update({
-          serial_number: editSerialNumber.trim(),
-          status: editStatus,
-          condition: editCondition,
-          location: editLocationId || null,
-          description: editDescription.trim() || null,
-        })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["asset", id] });
-      setIsEditing(false);
-      setSuccessMessage("Equipment updated successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
-    },
-    onError: (err: Error) => {
-      setEditError(err.message || "Failed to update equipment");
     },
   });
 
@@ -157,10 +135,13 @@ export default function SingleEquipment() {
     );
   }
 
-  const modelData = Array.isArray(asset.models) ? asset.models[0] : asset.models;
+  // Fallback string extraction for the joined models array if it behaves as a single element or object
+  const modelData = Array.isArray(asset.models)
+    ? asset.models[0]
+    : asset.models;
   const assetTitle = modelData?.name || asset.sku;
-  const brandName = modelData?.brand || "Unknown Brand";
 
+  // Initialize edit form when entering edit mode
   const handleEdit = () => {
     setEditSerialNumber(asset.serial_number || "");
     setEditStatus(asset.status || "available");
@@ -185,16 +166,45 @@ export default function SingleEquipment() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("No asset ID");
+      const { error } = await supabase
+        .from("assets")
+        .update({
+          serial_number: editSerialNumber.trim(),
+          status: editStatus,
+          condition: editCondition,
+          location: editLocationId || null,
+          description: editDescription.trim() || null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["asset", id] });
+      setIsEditing(false);
+      setSuccessMessage("Equipment updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    },
+    onError: (err: Error) => {
+      setEditError(err.message || "Failed to update equipment");
+    },
+  });
+  const brandName = modelData?.brand || "Unknown Brand";
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-16">
       <div className="max-w-6xl mx-auto px-6 py-10 animate-in fade-in duration-500">
-        {deleteError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{deleteError}</p>
-          </div>
-        )}
+        {/* Navigation & Header Actions */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+          {deleteError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{deleteError}</p>
+            </div>
+          )}
           <div>
+            {/* Breadcrumb */}
             <Link
               to="/inventory-manager/equipments"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
@@ -241,8 +251,11 @@ export default function SingleEquipment() {
           </div>
         )}
 
+        {/* Content Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Info Columns */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Edit Form */}
             {isEditing ? (
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -252,13 +265,7 @@ export default function SingleEquipment() {
                     Cancel
                   </Button>
                 </div>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (validateEdit()) updateMutation.mutate();
-                  }}
-                  className="space-y-4"
-                >
+                <form onSubmit={(e) => { e.preventDefault(); if (validateEdit()) updateMutation.mutate(); }} className="space-y-4">
                   <Input
                     label="Serial Number"
                     type="text"
@@ -279,36 +286,14 @@ export default function SingleEquipment() {
                               <ChevronDown className="h-5 w-5 text-gray-400" />
                             </span>
                           </ListboxButton>
-                          <Transition
-                            leave="transition ease-in duration-100"
-                            leaveFrom="opacity-100"
-                            leaveTo="opacity-0"
-                          >
+                          <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
                             <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                               {["available", "in_use", "maintenance", "retired"].map((status) => (
-                                <ListboxOption
-                                  key={status}
-                                  value={status}
-                                  className={({ active }) =>
-                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                      active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
-                                    }`
-                                  }
-                                >
+                                <ListboxOption key={status} value={status} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`}>
                                   {({ selected }) => (
                                     <>
-                                      <span
-                                        className={`block truncate capitalize ${
-                                          selected ? "font-medium" : "font-normal"
-                                        }`}
-                                      >
-                                        {status.replace("_", " ")}
-                                      </span>
-                                      {selected && (
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                          <Check className="h-5 w-5" />
-                                        </span>
-                                      )}
+                                      <span className={`block truncate capitalize ${selected ? "font-medium" : "font-normal"}`}>{status.replace("_", " ")}</span>
+                                      {selected && <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]"><Check className="h-5 w-5" /></span>}
                                     </>
                                   )}
                                 </ListboxOption>
@@ -323,43 +308,19 @@ export default function SingleEquipment() {
                       <Listbox value={editCondition} onChange={setEditCondition}>
                         <div className="relative">
                           <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                            <span className="text-gray-900 capitalize">
-                              {editCondition || "Select condition"}
-                            </span>
+                            <span className="text-gray-900 capitalize">{editCondition || "Select condition"}</span>
                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                               <ChevronDown className="h-5 w-5 text-gray-400" />
                             </span>
                           </ListboxButton>
-                          <Transition
-                            leave="transition ease-in duration-100"
-                            leaveFrom="opacity-100"
-                            leaveTo="opacity-0"
-                          >
+                          <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
                             <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                               {["excellent", "good", "fair", "poor"].map((condition) => (
-                                <ListboxOption
-                                  key={condition}
-                                  value={condition}
-                                  className={({ active }) =>
-                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                      active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
-                                    }`
-                                  }
-                                >
+                                <ListboxOption key={condition} value={condition} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`}>
                                   {({ selected }) => (
                                     <>
-                                      <span
-                                        className={`block truncate capitalize ${
-                                          selected ? "font-medium" : "font-normal"
-                                        }`}
-                                      >
-                                        {condition}
-                                      </span>
-                                      {selected && (
-                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                          <Check className="h-5 w-5" />
-                                        </span>
-                                      )}
+                                      <span className={`block truncate capitalize ${selected ? "font-medium" : "font-normal"}`}>{condition}</span>
+                                      {selected && <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]"><Check className="h-5 w-5" /></span>}
                                     </>
                                   )}
                                 </ListboxOption>
@@ -376,69 +337,28 @@ export default function SingleEquipment() {
                       <div className="relative">
                         <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
                           <span className={editLocationId ? "text-gray-900" : "text-gray-400"}>
-                            {editLocationId
-                              ? storageLocations.find((l) => l.id === editLocationId)?.name
-                              : "Select location"}
+                            {editLocationId ? storageLocations.find(l => l.id === editLocationId)?.name : "Select location"}
                           </span>
                           <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <ChevronDown className="h-5 w-5 text-gray-400" />
                           </span>
                         </ListboxButton>
-                        <Transition
-                          leave="transition ease-in duration-100"
-                          leaveFrom="opacity-100"
-                          leaveTo="opacity-0"
-                        >
+                        <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
                           <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                            <ListboxOption
-                              value=""
-                              className={({ active }) =>
-                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                  active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
-                                }`
-                              }
-                            >
+                            <ListboxOption value="" className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`}>
                               {({ selected }) => (
                                 <>
-                                  <span
-                                    className={`block truncate ${
-                                      selected ? "font-medium" : "font-normal"
-                                    }`}
-                                  >
-                                    No Location
-                                  </span>
-                                  {selected && (
-                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                      <Check className="h-5 w-5" />
-                                    </span>
-                                  )}
+                                  <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>No Location</span>
+                                  {selected && <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]"><Check className="h-5 w-5" /></span>}
                                 </>
                               )}
                             </ListboxOption>
                             {storageLocations.map((loc) => (
-                              <ListboxOption
-                                key={loc.id}
-                                value={loc.id}
-                                className={({ active }) =>
-                                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                    active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
-                                  }`
-                                }
-                              >
+                              <ListboxOption key={loc.id} value={loc.id} className={({ active }) => `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`}>
                                 {({ selected }) => (
                                   <>
-                                    <span
-                                      className={`block truncate ${
-                                        selected ? "font-medium" : "font-normal"
-                                      }`}
-                                    >
-                                      {loc.name}
-                                    </span>
-                                    {selected && (
-                                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                        <Check className="h-5 w-5" />
-                                      </span>
-                                    )}
+                                    <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>{loc.name}</span>
+                                    {selected && <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]"><Check className="h-5 w-5" /></span>}
                                   </>
                                 )}
                               </ListboxOption>
@@ -470,29 +390,33 @@ export default function SingleEquipment() {
               <>
                 <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-wrap items-center gap-8">
                   <div>
-                    <p className="text-sm text-gray-500 font-medium mb-1">System Status</p>
+                    <p className="text-sm text-gray-500 font-medium mb-1">
+                      System Status
+                    </p>
                     <span
-                      className={`inline-flex items-center px-3 py-1 text-sm font-bold rounded-md capitalize ${getStatusColor(
-                        asset.status
-                      )}`}
+                      className={`inline-flex items-center px-3 py-1 text-sm font-bold rounded-md capitalize ${getStatusColor(asset.status)}`}
                     >
                       {asset.status || "Available"}
                     </span>
                   </div>
                   <div className="w-px h-10 bg-gray-200 hidden sm:block"></div>
                   <div>
-                    <p className="text-sm text-gray-500 font-medium mb-1">Condition</p>
+                    <p className="text-sm text-gray-500 font-medium mb-1">
+                      Condition
+                    </p>
                     <span
-                      className={`inline-flex items-center text-sm font-bold capitalize ${getConditionColor(
-                        asset.condition
-                      )}`}
+                      className={`inline-flex items-center text-sm font-bold capitalize ${getConditionColor(asset.condition)}`}
                     >
-                      {asset.condition ? asset.condition.replace("_", " ") : "Unknown"}
+                      {asset.condition
+                        ? asset.condition.replace("_", " ")
+                        : "Unknown"}
                     </span>
                   </div>
                   <div className="w-px h-10 bg-gray-200 hidden sm:block"></div>
                   <div>
-                    <p className="text-sm text-gray-500 font-medium mb-1">Current Location</p>
+                    <p className="text-sm text-gray-500 font-medium mb-1">
+                      Current Location
+                    </p>
                     <div className="flex items-center gap-1.5 text-gray-900 font-medium">
                       <MapPin className="w-4 h-4 text-gray-400" />
                       {asset.storage_locations?.name || "Unassigned"}
@@ -500,19 +424,26 @@ export default function SingleEquipment() {
                   </div>
                 </div>
 
+                {/* Core Details Grids */}
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4 flex items-center gap-2">
                     <Package className="w-5 h-5 text-gray-400" />
-                    <h2 className="font-semibold text-gray-900">Identity Details</h2>
+                    <h2 className="font-semibold text-gray-900">
+                      Identity Details
+                    </h2>
                   </div>
                   <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Serial Number</p>
-                      <p className="font-mono text-gray-900">{asset.serial_number || "-"}</p>
+                      <p className="font-mono text-gray-900">
+                        {asset.serial_number || "-"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Model ID</p>
-                      <p className="font-mono text-gray-900 break-all">{asset.model_id || "-"}</p>
+                      <p className="font-mono text-gray-900 break-all">
+                        {asset.model_id || "-"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-1">SKU Tag</p>
@@ -528,7 +459,9 @@ export default function SingleEquipment() {
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4 flex items-center gap-2">
                     <Info className="w-5 h-5 text-gray-400" />
-                    <h2 className="font-semibold text-gray-900">Additional Description</h2>
+                    <h2 className="font-semibold text-gray-900">
+                      Additional Description
+                    </h2>
                   </div>
                   <div className="p-6">
                     <p className="text-gray-700 whitespace-pre-wrap">
@@ -542,9 +475,10 @@ export default function SingleEquipment() {
                 </div>
               </>
             )}
-          </div>
 
+          {/* Sidebar Area */}
           <div className="space-y-6">
+            {/* Lifecycle Card */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-gray-400" />
@@ -576,10 +510,13 @@ export default function SingleEquipment() {
               </div>
             </div>
 
+            {/* Maintenance Settings */}
             <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="border-b border-gray-100 bg-gray-50/50 px-6 py-4 flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-gray-400" />
-                <h2 className="font-semibold text-gray-900">Maintenance Logs</h2>
+                <h2 className="font-semibold text-gray-900">
+                  Maintenance Logs
+                </h2>
               </div>
               <div className="p-6 space-y-4">
                 <div className="flex justify-between items-center">
@@ -598,7 +535,10 @@ export default function SingleEquipment() {
                       : "-"}
                   </span>
                 </div>
-                <Button variant="secondary" className="w-full mt-4 justify-center bg-gray-50">
+                <Button
+                  variant="secondary"
+                  className="w-full mt-4 justify-center bg-gray-50"
+                >
                   Log Maintenance
                 </Button>
               </div>
@@ -606,6 +546,7 @@ export default function SingleEquipment() {
           </div>
         </div>
 
+        {/* Delete Confirmation Modal */}
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Equipment"

@@ -22,7 +22,7 @@ const Layout = () => {
             {/* Left side - Logo */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center gap-3">
-                <span className="font-semibold text-xl tracking-wider text-primary">
+                <span className="font-semibold text-xl tracking-wider">
                   LANGRPROS
                 </span>
               </Link>
