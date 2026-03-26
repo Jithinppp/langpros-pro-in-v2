@@ -1,6 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import {
   Listbox,
   ListboxButton,
@@ -28,24 +27,39 @@ import Button from "../../components/Button";
 import Loading from "../../components/Loading";
 import ConfirmModal from "../../components/ConfirmModal";
 import Input from "../../components/Input";
+import { useSingleEquipmentStore } from "../../store/singleEquipmentStore";
 import { getStatusColor, getConditionColor } from "../../utils/theme";
 
 export default function SingleEquipment() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [editError, setEditError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const store = useSingleEquipmentStore();
 
-  const [editSerialNumber, setEditSerialNumber] = useState("");
-  const [editStatus, setEditStatus] = useState("");
-  const [editCondition, setEditCondition] = useState("");
-  const [editLocationId, setEditLocationId] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const {
+    showDeleteModal,
+    deleteError,
+    isEditing,
+    editError,
+    successMessage,
+    editSerialNumber,
+    editStatus,
+    editCondition,
+    editLocationId,
+    editDescription,
+    editErrors,
+    setShowDeleteModal,
+    setDeleteError,
+    setIsEditing,
+    setEditError,
+    setSuccessMessage,
+    setEditSerialNumber,
+    setEditStatus,
+    setEditCondition,
+    setEditLocationId,
+    setEditDescription,
+    setEditErrors,
+  } = store;
 
   const {
     data: asset,
@@ -180,7 +194,6 @@ export default function SingleEquipment() {
 
   const validateEdit = () => {
     const newErrors: Record<string, string> = {};
-    if (!editSerialNumber.trim()) newErrors.serialNumber = "Serial number is required";
     setEditErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -266,14 +279,13 @@ export default function SingleEquipment() {
                     onChange={(e) => setEditSerialNumber(e.target.value)}
                     error={editErrors.serialNumber}
                     placeholder="Enter serial number"
-                    required
                   />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
                       <Listbox value={editStatus} onChange={setEditStatus}>
                         <div className="relative">
-                          <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
+                          <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50" disabled>
                             <span className="text-gray-900 capitalize">{editStatus || "Select status"}</span>
                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                               <ChevronDown className="h-5 w-5 text-gray-400" />

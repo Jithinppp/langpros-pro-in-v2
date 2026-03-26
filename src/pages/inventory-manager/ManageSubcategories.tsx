@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from "@headlessui/react";
@@ -6,7 +6,8 @@ import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import ConfirmModal from "../../components/ConfirmModal";
-import { ChevronLeft, Trash2, Folder, Pencil, Save, ChevronDown, Check } from "lucide-react";
+import { useSubcategoryStore } from "../../store/subcategoryStore";
+import { ChevronLeft, Trash2, Folder, Pencil, Save, ChevronDown, Check, ChevronRight, ChevronFirst, ChevronLast } from "lucide-react";
 
 interface Subcategory {
   id: string;
@@ -29,47 +30,47 @@ interface Category {
 
 export default function ManageSubcategories() {
   const queryClient = useQueryClient();
+  const store = useSubcategoryStore();
 
-  // Local state for category dropdown (resets when leaving route)
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const {
+    selectedCategoryId,
+    formName,
+    formCode,
+    formDescription,
+    formErrors,
+    formIsSubmitting,
+    formSubmitError,
+    editingId,
+    editName,
+    editCode,
+    editCategoryId,
+    editDescription,
+    editErrors,
+    isEditing,
+    setSelectedCategoryId,
+    setFormName,
+    setFormCode,
+    setFormDescription,
+    setFormErrors,
+    setFormIsSubmitting,
+    setFormSubmitError,
+    setEditingId,
+    setEditName,
+    setEditCode,
+    setEditCategoryId,
+    setEditDescription,
+    setEditErrors,
+    setIsEditing,
+  } = store;
 
-  // Reset state when leaving the route
-  useEffect(() => {
-    return () => {
-      setSelectedCategoryId("");
-      setFormName("");
-      setFormCode("");
-      setFormDescription("");
-      setFormErrors({});
-    };
-  }, []);
-
-  // Add form state (local state)
-  const [formName, setFormName] = useState("");
-  const [formCode, setFormCode] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [formIsSubmitting, setFormIsSubmitting] = useState(false);
-  const [formSubmitError, setFormSubmitError] = useState("");
-
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [subcategoryToDelete, setSubcategoryToDelete] =
-    useState<Subcategory | null>(null);
-
+  const [subcategoryToDelete, setSubcategoryToDelete] = useState<Subcategory | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Edit form state
-  const [editName, setEditName] = useState("");
-  const [editCode, setEditCode] = useState("");
-  const [editCategoryId, setEditCategoryId] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Fetch categories for dropdown
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -82,7 +83,6 @@ export default function ManageSubcategories() {
     },
   });
 
-  // Fetch subcategories filtered by selected category
   const { data: subcategories = [], isLoading } = useQuery({
     queryKey: ["subcategories", selectedCategoryId],
     queryFn: async () => {
@@ -98,7 +98,21 @@ export default function ManageSubcategories() {
     enabled: !!selectedCategoryId,
   });
 
-  // Add mutation
+  const handleCategoryChange = (id: string) => {
+    setSelectedCategoryId(id);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(subcategories.length / itemsPerPage);
+  const paginatedSubcategories = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return subcategories.slice(start, start + itemsPerPage);
+  }, [subcategories, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   const addMutation = useMutation({
     mutationFn: async (data: {
       name: string;
@@ -113,16 +127,14 @@ export default function ManageSubcategories() {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
       setSuccessMessage("Subcategory added successfully!");
       resetAddForm();
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (err: Error) => {
-      setSubmitError(err.message || "Failed to add subcategory");
-      setIsSubmitting(false);
+      setFormSubmitError(err.message || "Failed to add subcategory");
+      setFormIsSubmitting(false);
     },
   });
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: {
       id: string;
@@ -148,12 +160,11 @@ export default function ManageSubcategories() {
       setIsEditing(false);
     },
     onError: (err: Error) => {
-      setSubmitError(err.message || "Failed to update subcategory");
+      setFormSubmitError(err.message || "Failed to update subcategory");
       setIsEditing(false);
     },
   });
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -253,7 +264,6 @@ export default function ManageSubcategories() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="max-w-4xl mx-auto px-6 py-10 animate-in fade-in duration-500">
-        {/* Breadcrumb and Title */}
         <Link
           to="/inventory-manager/add-equipment"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
@@ -271,7 +281,6 @@ export default function ManageSubcategories() {
           </p>
         </div>
 
-        {/* Add Form - Always visible */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -296,7 +305,7 @@ export default function ManageSubcategories() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Category <span className="text-red-500">*</span>
               </label>
-              <Listbox value={selectedCategoryId} onChange={setSelectedCategoryId}>
+              <Listbox value={selectedCategoryId} onChange={handleCategoryChange}>
                 <div className="relative">
                   <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
                     <span className={selectedCategoryId ? "text-gray-900" : "text-gray-400"}>
@@ -362,11 +371,12 @@ export default function ManageSubcategories() {
                 label="Subcategory Code"
                 type="text"
                 value={formCode}
-                onChange={(e) => setFormCode(e.target.value)}
+                onChange={(e) => setFormCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
                 error={formErrors.code}
                 placeholder="e.g., GAM-LAP"
                 required
                 maxLength={10}
+                helperText="No spaces or special characters. Example: GAM-LAP"
               />
             </div>
             <div>
@@ -396,7 +406,6 @@ export default function ManageSubcategories() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Subcategory"
@@ -411,7 +420,6 @@ export default function ManageSubcategories() {
           variant="danger"
         />
 
-        {/* Subcategories List */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           {!selectedCategoryId ? (
             <div className="p-8 text-center text-gray-500">
@@ -428,12 +436,13 @@ export default function ManageSubcategories() {
               <p>No subcategories found for this category.</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {subcategories.map((subcategory) => (
-                <div
-                  key={subcategory.id}
-                  className="p-4 hover:bg-gray-50 transition-colors"
-                >
+            <>
+              <div className="divide-y divide-gray-100">
+                {paginatedSubcategories.map((subcategory) => (
+                  <div
+                    key={subcategory.id}
+                    className="p-4 hover:bg-gray-50 transition-colors"
+                  >
                   {editingId === subcategory.id ? (
                     <form onSubmit={handleUpdate} className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -448,10 +457,11 @@ export default function ManageSubcategories() {
                         <Input
                           type="text"
                           value={editCode}
-                          onChange={(e) => setEditCode(e.target.value)}
+                          onChange={(e) => setEditCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
                           error={editErrors.code}
                           placeholder="Code"
                           className="mb-0"
+                          helperText="e.g., GAM-LAP"
                         />
                         <select
                           value={editCategoryId}
@@ -540,7 +550,52 @@ export default function ManageSubcategories() {
                   )}
                 </div>
               ))}
-            </div>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                  <div className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, subcategories.length)} of {subcategories.length} subcategories
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="First page"
+                    >
+                      <ChevronFirst className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-3 py-1 text-sm text-gray-700">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Last page"
+                    >
+                      <ChevronLast className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

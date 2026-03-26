@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -220,7 +220,7 @@ export default function AddEquipment() {
   );
 
   // Generate SKU when category, subcategory, or model changes
-  useMemo(() => {
+  useEffect(() => {
     const generateSku = async () => {
       if (!selectedCategory || !selectedSubcategory || !selectedModel) {
         setGeneratedSku("");
@@ -258,7 +258,7 @@ export default function AddEquipment() {
     };
 
     generateSku();
-  }, [selectedCategory, selectedSubcategory, selectedModel]);
+  }, [selectedCategory, selectedSubcategory, selectedModel, setGeneratedSku]);
 
   // Reset dependent fields when parent changes
   const handleCategoryChange = (value: string) => {
@@ -695,6 +695,7 @@ export default function AddEquipment() {
                   readOnly
                   placeholder="Select category, subcategory, and model to generate SKU"
                   className="pr-10 font-mono bg-gray-50 cursor-default"
+                  helperText="Example: LAP-DSK-LEN-001 (Category-Subcategory-Model-Number)"
                 />
                 {generatedSku && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">

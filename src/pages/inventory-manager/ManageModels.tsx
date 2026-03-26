@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from "@headlessui/react";
@@ -6,12 +6,13 @@ import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import ConfirmModal from "../../components/ConfirmModal";
-import { ChevronLeft, Trash2, Package, Pencil, Save, ChevronDown, Check } from "lucide-react";
+import { useModelStore } from "../../store/modelStore";
+import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Trash2, Package, Pencil, Save, ChevronDown, Check } from "lucide-react";
 
 interface Model {
   id: string;
   name: string;
-  model_number: string;
+  code: string;
   brand: string;
   subcategory_id: string;
   description: string | null;
@@ -39,51 +40,57 @@ interface Category {
 
 export default function ManageModels() {
   const queryClient = useQueryClient();
-
-  // Edit form state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const store = useModelStore();
   const [modelToDelete, setModelToDelete] = useState<Model | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Add form state - always showing
-  const [name, setName] = useState("");
-  const [modelNumber, setModelNumber] = useState("");
-  const [brand, setBrand] = useState("");
-  const [description, setDescription] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const {
+    editingId,
+    deleteId,
+    deleteError,
+    showDeleteModal,
+    name,
+    code,
+    brand,
+    description,
+    errors,
+    isSubmitting,
+    submitError,
+    successMessage,
+    formCategoryId,
+    formSubcategoryId,
+    editName,
+    editCode,
+    editBrand,
+    editSubcategoryId,
+    editDescription,
+    editErrors,
+    isEditing,
+    setEditingId,
+    setDeleteId,
+    setDeleteError,
+    setShowDeleteModal,
+    setName,
+    setCode,
+    setBrand,
+    setDescription,
+    setErrors,
+    setIsSubmitting,
+    setSubmitError,
+    setSuccessMessage,
+    setFormCategoryId,
+    setFormSubcategoryId,
+    setEditName,
+    setEditCode,
+    setEditBrand,
+    setEditSubcategoryId,
+    setEditDescription,
+    setEditErrors,
+    setIsEditing,
+    resetForm,
+  } = store;
 
-  // Form state for adding new model (local state)
-  const [formCategoryId, setFormCategoryId] = useState("");
-  const [formSubcategoryId, setFormSubcategoryId] = useState("");
-
-  // Reset state when leaving the route
-  useEffect(() => {
-    return () => {
-      setFormCategoryId("");
-      setFormSubcategoryId("");
-      setName("");
-      setModelNumber("");
-      setBrand("");
-      setDescription("");
-      setErrors({});
-    };
-  }, []);
-
-  // Edit form state
-  const [editName, setEditName] = useState("");
-  const [editModelNumber, setEditModelNumber] = useState("");
-  const [editBrand, setEditBrand] = useState("");
-  const [editSubcategoryId, setEditSubcategoryId] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Fetch models based on selected category and subcategory
   const { data: models = [], isLoading } = useQuery({
     queryKey: ["models", formCategoryId, formSubcategoryId],
     queryFn: async () => {
@@ -101,7 +108,21 @@ export default function ManageModels() {
     enabled: !!formCategoryId && !!formSubcategoryId,
   });
 
-  // Fetch categories for dropdown
+  const totalPages = Math.ceil(models.length / itemsPerPage);
+  const paginatedModels = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return models.slice(start, start + itemsPerPage);
+  }, [models, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleCategoryChange = (id: string) => {
+    setFormCategoryId(id);
+    setCurrentPage(1);
+  };
+
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -114,7 +135,6 @@ export default function ManageModels() {
     },
   });
 
-  // Fetch subcategories for dropdown
   const { data: allSubcategories = [] } = useQuery({
     queryKey: ["subcategories"],
     queryFn: async () => {
@@ -127,23 +147,15 @@ export default function ManageModels() {
     },
   });
 
-  // Filter subcategories based on selected category in form
   const subcategories = useMemo(() => {
     if (!formCategoryId) return allSubcategories;
     return allSubcategories.filter((sub) => sub.category_id === formCategoryId);
   }, [allSubcategories, formCategoryId]);
 
-  // Reset subcategory when category changes
-  const handleCategoryChange = (id: string) => {
-    setFormCategoryId(id);
-    setFormSubcategoryId("");
-  };
-
-  // Add mutation
   const addMutation = useMutation({
     mutationFn: async (data: {
       name: string;
-      model_number: string;
+      code: string;
       brand: string;
       subcategory_id: string;
       description: string;
@@ -154,8 +166,7 @@ export default function ManageModels() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["models"] });
       setSuccessMessage("Model added successfully!");
-      resetAddForm();
-      // Clear success message after 3 seconds
+      resetForm();
       setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (err: Error) => {
@@ -164,12 +175,11 @@ export default function ManageModels() {
     },
   });
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: {
       id: string;
       name: string;
-      model_number: string;
+      code: string;
       brand: string;
       subcategory_id: string;
       description: string;
@@ -178,7 +188,7 @@ export default function ManageModels() {
         .from("models")
         .update({
           name: data.name,
-          model_number: data.model_number,
+          code: data.code,
           brand: data.brand,
           subcategory_id: data.subcategory_id,
           description: data.description,
@@ -197,7 +207,6 @@ export default function ManageModels() {
     },
   });
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("models").delete().eq("id", id);
@@ -213,22 +222,10 @@ export default function ManageModels() {
     },
   });
 
-  const resetAddForm = () => {
-    setName("");
-    setModelNumber("");
-    setBrand("");
-    setFormCategoryId("");
-    setFormSubcategoryId("");
-    setDescription("");
-    setErrors({});
-    setSubmitError("");
-    setIsSubmitting(false);
-  };
-
   const validateAdd = () => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = "Model name is required";
-    if (!modelNumber.trim()) newErrors.modelNumber = "Model code is required";
+    if (!code.trim()) newErrors.code = "Model code is required";
     if (!brand.trim()) newErrors.brand = "Brand is required";
     if (!formCategoryId) newErrors.categoryId = "Please select a category";
     if (!formSubcategoryId) newErrors.subcategoryId = "Please select a subcategory";
@@ -239,8 +236,8 @@ export default function ManageModels() {
   const validateEdit = () => {
     const newErrors: Record<string, string> = {};
     if (!editName.trim()) newErrors.name = "Model name is required";
-    if (!editModelNumber.trim())
-      newErrors.modelNumber = "Model code is required";
+    if (!editCode.trim())
+      newErrors.code = "Model code is required";
     if (!editBrand.trim()) newErrors.brand = "Brand is required";
     if (!editSubcategoryId)
       newErrors.subcategoryId = "Please select a subcategory";
@@ -255,7 +252,7 @@ export default function ManageModels() {
     setIsSubmitting(true);
     addMutation.mutate({
       name: name.trim(),
-      model_number: modelNumber.trim(),
+      code: code.trim(),
       brand: brand.trim(),
       subcategory_id: formSubcategoryId,
       description: description.trim(),
@@ -265,7 +262,7 @@ export default function ManageModels() {
   const handleEdit = (model: Model) => {
     setEditingId(model.id);
     setEditName(model.name);
-    setEditModelNumber(model.model_number);
+    setEditCode(model.code);
     setEditBrand(model.brand);
     setEditSubcategoryId(model.subcategory_id);
     setEditDescription(model.description || "");
@@ -279,7 +276,7 @@ export default function ManageModels() {
     updateMutation.mutate({
       id: editingId,
       name: editName.trim(),
-      model_number: editModelNumber.trim(),
+      code: editCode.trim(),
       brand: editBrand.trim(),
       subcategory_id: editSubcategoryId,
       description: editDescription.trim(),
@@ -304,7 +301,6 @@ export default function ManageModels() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="max-w-4xl mx-auto px-6 py-10 animate-in fade-in duration-500">
-        {/* Breadcrumb and Title */}
         <Link
           to="/inventory-manager/add-equipment"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
@@ -322,7 +318,6 @@ export default function ManageModels() {
           </p>
         </div>
 
-        {/* Add Form - Always visible */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -470,11 +465,12 @@ export default function ManageModels() {
               <Input
                 label="Model Code"
                 type="text"
-                value={modelNumber}
-                onChange={(e) => setModelNumber(e.target.value)}
-                error={errors.modelNumber}
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                error={errors.code}
                 placeholder="e.g., 300X"
                 required
+                helperText="No spaces or special characters. Example: 300X"
               />
               <Input
                 label="Brand"
@@ -513,7 +509,6 @@ export default function ManageModels() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Model"
@@ -528,7 +523,6 @@ export default function ManageModels() {
           variant="danger"
         />
 
-        {/* Models List */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           {!formCategoryId || !formSubcategoryId ? (
             <div className="p-8 text-center text-gray-500">
@@ -545,12 +539,13 @@ export default function ManageModels() {
               <p>No models found for this selection.</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {models.map((model) => (
-                <div
-                  key={model.id}
-                  className="p-4 hover:bg-gray-50 transition-colors"
-                >
+            <>
+              <div className="divide-y divide-gray-100">
+                {paginatedModels.map((model) => (
+                  <div
+                    key={model.id}
+                    className="p-4 hover:bg-gray-50 transition-colors"
+                  >
                   {editingId === model.id ? (
                     <form onSubmit={handleUpdate} className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -607,11 +602,12 @@ export default function ManageModels() {
                       />
                       <Input
                         type="text"
-                        value={editModelNumber}
-                        onChange={(e) => setEditModelNumber(e.target.value)}
-                        error={editErrors.modelNumber}
+                        value={editCode}
+                        onChange={(e) => setEditCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                        error={editErrors.code}
                         placeholder="Model code"
                         label="Model Code"
+                        helperText="e.g., 300X"
                       />
                       <Input
                         type="text"
@@ -649,7 +645,7 @@ export default function ManageModels() {
                             {model.name}
                           </span>
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                            {model.model_number}
+                            {model.code}
                           </span>
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
                             {model.brand}
@@ -692,7 +688,52 @@ export default function ManageModels() {
                   )}
                 </div>
               ))}
-            </div>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                  <div className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, models.length)} of {models.length} models
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="First page"
+                    >
+                      <ChevronFirst className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="px-3 py-1 text-sm text-gray-700">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Last page"
+                    >
+                      <ChevronLast className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

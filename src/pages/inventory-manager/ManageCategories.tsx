@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import ConfirmModal from "../../components/ConfirmModal";
+import { useCategoryStore } from "../../store/categoryStore";
 import { ChevronLeft, Trash2, Package, Pencil, Save } from "lucide-react";
 
 interface Category {
@@ -17,31 +18,46 @@ interface Category {
 
 export default function ManageCategories() {
   const queryClient = useQueryClient();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
-    null,
-  );
+  const store = useCategoryStore();
+  
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
-  // Add form state - always showing
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [description, setDescription] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const {
+    editingId,
+    deleteId,
+    deleteError,
+    showDeleteModal,
+    name,
+    code,
+    description,
+    errors,
+    isSubmitting,
+    submitError,
+    successMessage,
+    editName,
+    editCode,
+    editDescription,
+    editErrors,
+    isEditing,
+    setEditingId,
+    setDeleteId,
+    setDeleteError,
+    setShowDeleteModal,
+    setName,
+    setCode,
+    setDescription,
+    setErrors,
+    setIsSubmitting,
+    setSubmitError,
+    setSuccessMessage,
+    setEditName,
+    setEditCode,
+    setEditDescription,
+    setEditErrors,
+    setIsEditing,
+    resetForm,
+  } = store;
 
-  // Edit form state
-  const [editName, setEditName] = useState("");
-  const [editCode, setEditCode] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Fetch all categories
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -54,7 +70,6 @@ export default function ManageCategories() {
     },
   });
 
-  // Add mutation
   const addMutation = useMutation({
     mutationFn: async (data: {
       name: string;
@@ -67,8 +82,7 @@ export default function ManageCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       setSuccessMessage("Category added successfully!");
-      resetAddForm();
-      // Clear success message after 3 seconds
+      resetForm();
       setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (err: Error) => {
@@ -77,7 +91,6 @@ export default function ManageCategories() {
     },
   });
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (data: {
       id: string;
@@ -106,7 +119,6 @@ export default function ManageCategories() {
     },
   });
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("categories").delete().eq("id", id);
@@ -121,15 +133,6 @@ export default function ManageCategories() {
       setDeleteId(null);
     },
   });
-
-  const resetAddForm = () => {
-    setName("");
-    setCode("");
-    setDescription("");
-    setErrors({});
-    setSubmitError("");
-    setIsSubmitting(false);
-  };
 
   const validateAdd = () => {
     const newErrors: Record<string, string> = {};
@@ -197,7 +200,6 @@ export default function ManageCategories() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="max-w-4xl mx-auto px-6 py-10 animate-in fade-in duration-500">
-        {/* Breadcrumb and Title */}
         <Link
           to="/inventory-manager/add-equipment"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
@@ -215,7 +217,6 @@ export default function ManageCategories() {
           </p>
         </div>
 
-        {/* Add Form - Always visible */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -250,11 +251,12 @@ export default function ManageCategories() {
                 label="Category Code"
                 type="text"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
                 error={errors.code}
                 placeholder="e.g., LAP"
                 required
                 maxLength={10}
+                helperText="No spaces or special characters. Example: LAP"
               />
             </div>
             <div>
@@ -284,7 +286,6 @@ export default function ManageCategories() {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Category"
@@ -299,7 +300,6 @@ export default function ManageCategories() {
           variant="danger"
         />
 
-        {/* Categories List */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center text-gray-500">
@@ -333,10 +333,11 @@ export default function ManageCategories() {
                         <Input
                           type="text"
                           value={editCode}
-                          onChange={(e) => setEditCode(e.target.value)}
+                          onChange={(e) => setEditCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
                           error={editErrors.code}
                           placeholder="Code"
                           className="mb-0"
+                          helperText="e.g., LAP"
                         />
                         <input
                           type="text"
