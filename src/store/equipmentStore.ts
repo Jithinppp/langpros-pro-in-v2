@@ -19,6 +19,7 @@ interface EquipmentFormState {
   isSubmitting: boolean;
   errors: Record<string, string>;
   submitError: string;
+  successMessage: string;
 
   // Actions
   setCategoryId: (id: string) => void;
@@ -36,6 +37,7 @@ interface EquipmentFormState {
   setIsSubmitting: (submitting: boolean) => void;
   setErrors: (errors: Record<string, string>) => void;
   setSubmitError: (error: string) => void;
+  setSuccessMessage: (msg: string) => void;
   reset: () => void;
 }
 
@@ -55,6 +57,7 @@ const equipmentInitialState = {
   isSubmitting: false,
   errors: {},
   submitError: "",
+  successMessage: "",
 };
 
 export const useEquipmentStore = create<EquipmentFormState>((set) => ({
@@ -76,5 +79,6 @@ export const useEquipmentStore = create<EquipmentFormState>((set) => ({
   setIsSubmitting: (submitting) => set({ isSubmitting: submitting }),
   setErrors: (errors) => set({ errors }),
   setSubmitError: (error) => set({ submitError: error }),
+  setSuccessMessage: (msg) => set({ successMessage: msg }),
   reset: () => set(equipmentInitialState),
 }));

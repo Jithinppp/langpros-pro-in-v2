@@ -12,12 +12,15 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 // inventory-manager pages
 import InventoryManagerDashboard from "../pages/inventory-manager/InventoryManagerDashboard";
 import AddEquipment from "../pages/inventory-manager/AddEquipment";
+import ImportEquipment from "../pages/inventory-manager/ImportEquipment";
 import AddStorageLocation from "../pages/inventory-manager/AddStorageLocation";
 import ManageCategories from "../pages/inventory-manager/ManageCategories";
 import ManageSubcategories from "../pages/inventory-manager/ManageSubcategories";
 import ManageModels from "../pages/inventory-manager/ManageModels";
 import Equipments from "../pages/inventory-manager/Equipments";
 import SingleEquipment from "../pages/inventory-manager/SingleEquipment";
+import Archive from "../pages/inventory-manager/Archive";
+import Activities from "../pages/inventory-manager/Activities";
 import Reports from "../pages/inventory-manager/Reports";
 
 // project-manager pages
@@ -69,12 +72,15 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <InventoryManagerDashboard /> },
           { path: "add-equipment", element: <AddEquipment /> },
+          { path: "import-equipment", element: <ImportEquipment /> },
           { path: "manage-categories", element: <ManageCategories /> },
           { path: "manage-subcategories", element: <ManageSubcategories /> },
           { path: "manage-models", element: <ManageModels /> },
           { path: "add-storage-location", element: <AddStorageLocation /> },
           { path: "equipments", element: <Equipments /> },
           { path: "equipments/:id", element: <SingleEquipment /> },
+          { path: "archive", element: <Archive /> },
+          { path: "activities", element: <Activities /> },
           { path: "reports", element: <Reports /> },
         ],
       },

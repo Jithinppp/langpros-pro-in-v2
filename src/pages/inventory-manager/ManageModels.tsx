@@ -101,11 +101,13 @@ export default function ManageModels() {
           "*, subcategories:subcategories(id, name, code, category_id)",
         )
         .eq("subcategory_id", formSubcategoryId)
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Model[];
     },
     enabled: !!formCategoryId && !!formSubcategoryId,
+    staleTime: 30000,
   });
 
   const totalPages = Math.ceil(models.length / itemsPerPage);
@@ -129,10 +131,12 @@ export default function ManageModels() {
       const { data, error } = await supabase
         .from("categories")
         .select("id, name, code")
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Category[];
     },
+    staleTime: 30000,
   });
 
   const { data: allSubcategories = [] } = useQuery({
@@ -141,10 +145,12 @@ export default function ManageModels() {
       const { data, error } = await supabase
         .from("subcategories")
         .select("id, name, code, category_id")
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Subcategory[];
     },
+    staleTime: 30000,
   });
 
   const subcategories = useMemo(() => {
@@ -209,7 +215,7 @@ export default function ManageModels() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("models").delete().eq("id", id);
+      const { error } = await supabase.rpc("soft_delete_model", { p_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -512,7 +518,7 @@ export default function ManageModels() {
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Model"
-          message={`Are you sure you want to delete "${modelToDelete?.name}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${modelToDelete?.name}"? All assets under this model will also be soft-deleted and moved to the archive.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}

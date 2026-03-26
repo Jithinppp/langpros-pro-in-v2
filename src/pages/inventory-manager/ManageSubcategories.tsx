@@ -77,10 +77,12 @@ export default function ManageSubcategories() {
       const { data, error } = await supabase
         .from("categories")
         .select("id, name, code")
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Category[];
     },
+    staleTime: 30000,
   });
 
   const { data: subcategories = [], isLoading } = useQuery({
@@ -91,11 +93,13 @@ export default function ManageSubcategories() {
         .from("subcategories")
         .select("*, categories:categories(name, code)")
         .eq("category_id", selectedCategoryId)
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Subcategory[];
     },
     enabled: !!selectedCategoryId,
+    staleTime: 30000,
   });
 
   const handleCategoryChange = (id: string) => {
@@ -167,10 +171,7 @@ export default function ManageSubcategories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("subcategories")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.rpc("soft_delete_subcategory", { p_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -409,7 +410,7 @@ export default function ManageSubcategories() {
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Subcategory"
-          message={`Are you sure you want to delete "${subcategoryToDelete?.name}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${subcategoryToDelete?.name}"? All models and assets under this subcategory will also be soft-deleted and moved to the archive.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}

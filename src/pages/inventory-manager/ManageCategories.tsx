@@ -64,10 +64,12 @@ export default function ManageCategories() {
       const { data, error } = await supabase
         .from("categories")
         .select("*")
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Category[];
     },
+    staleTime: 30000,
   });
 
   const addMutation = useMutation({
@@ -121,7 +123,7 @@ export default function ManageCategories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("categories").delete().eq("id", id);
+      const { error } = await supabase.rpc("soft_delete_category", { p_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -289,7 +291,7 @@ export default function ManageCategories() {
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Category"
-          message={`Are you sure you want to delete "${categoryToDelete?.name}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${categoryToDelete?.name}"? All subcategories, models, and assets under this category will also be soft-deleted and moved to the archive.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}

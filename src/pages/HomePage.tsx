@@ -33,7 +33,6 @@ function HomePage() {
   // If user is already logged in and has role, redirect
   useEffect(() => {
     if (session && role && !authLoading) {
-      console.log("🏠 HomePage: User logged in with role, redirecting...");
       const redirectRoute = roleToPath[role];
       if (redirectRoute) {
         navigate(redirectRoute);
@@ -46,13 +45,11 @@ function HomePage() {
     setLoading(true);
 
     try {
-      console.log("🔐 Signing in via Zustand store...");
       await signIn(data.email, data.password);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred",
       );
-      console.error(err);
     } finally {
       setLoading(false);
     }

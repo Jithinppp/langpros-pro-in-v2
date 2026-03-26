@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -61,6 +62,11 @@ export default function SingleEquipment() {
     setEditErrors,
   } = store;
 
+  // Reset delete modal when component mounts or id changes
+  useEffect(() => {
+    setShowDeleteModal(false);
+  }, [id, setShowDeleteModal]);
+
   const {
     data: asset,
     isLoading,
@@ -82,6 +88,7 @@ export default function SingleEquipment() {
       return data;
     },
     enabled: !!id,
+    staleTime: 30000,
   });
 
   const { data: storageLocations = [] } = useQuery({
@@ -94,12 +101,13 @@ export default function SingleEquipment() {
       if (error) throw error;
       return data;
     },
+    staleTime: 30000,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!id) throw new Error("No asset ID");
-      const { error } = await supabase.from("assets").delete().eq("id", id);
+      const { error } = await supabase.rpc("soft_delete_asset", { p_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -139,7 +147,7 @@ export default function SingleEquipment() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32">
+      <div className="min-h-screen flex flex-col items-center justify-center">
         <Loading className="w-10 h-10 text-[#1769ff] mb-4" />
         <p className="text-gray-500 font-medium">Loading asset details...</p>
       </div>
@@ -621,7 +629,7 @@ export default function SingleEquipment() {
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Equipment"
-          message={`Are you sure you want to delete "${assetTitle}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${assetTitle}" (${asset.sku})? The item will be marked as inactive and hidden from the list.`}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={() => deleteMutation.mutate()}

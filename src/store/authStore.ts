@@ -22,14 +22,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: true,
 
   initializeAuth: async () => {
-    // Prevent duplicate listeners due to React 18 Strict Mode
     if (isInitialized) return;
     isInitialized = true;
 
-    console.log("🚀 Initializing Zustand Auth singleton...");
-
     const checkRole = async (userEmail: string) => {
-      console.log("📧 Fetching role for email:", userEmail);
       const { data, error } = await supabase
         .from("user_roles")
         .select("user_role")
@@ -37,7 +33,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .single();
 
       if (error) {
-        console.error("❌ Error fetching role:", error.message);
         return null;
       }
       return data?.user_role as UserRole | null;
@@ -48,7 +43,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const currentRole = get().role;
         const currentUser = get().user;
         
-        // Only fetch role if we don't have it or the user changed
         if (!currentRole || currentUser?.email !== session.user.email) {
           const role = await checkRole(session.user.email || "");
           set({ session, user: session.user, role, loading: false });
@@ -60,22 +54,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     };
 
-    // Initial session load
     const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) console.error("Session check error:", error);
+    if (error) {
+      console.error("Session check error:", error);
+    }
     await handleSession(session);
 
-    // Singleton listener for changes
     supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log("🔄 Global Auth event:", event);
-      
       if (event === "SIGNED_IN") {
         set({ loading: true });
         await handleSession(newSession);
       } else if (event === "SIGNED_OUT") {
         set({ session: null, user: null, role: null, loading: false });
       } else if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-        // Silently update session to avoid unmounting the UI and showing the loading screen
         const currentRole = get().role;
         if (!currentRole) {
            await handleSession(newSession);
@@ -93,7 +84,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    console.log("🚪 Signing out...");
     await supabase.auth.signOut();
     set({ user: null, session: null, role: null, loading: false });
     window.location.href = "/";

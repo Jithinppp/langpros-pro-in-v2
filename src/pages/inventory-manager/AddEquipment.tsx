@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Listbox,
@@ -21,6 +21,7 @@ import {
   Plus,
   Loader2,
   AlertCircle,
+  Upload,
 } from "lucide-react";
 
 // Types
@@ -50,7 +51,6 @@ interface StorageLocation {
 }
 
 export default function AddEquipment() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
 
@@ -71,6 +71,7 @@ export default function AddEquipment() {
     isSubmitting,
     errors,
     submitError,
+    successMessage,
     setCategoryId,
     setSubcategoryId,
     setModelId,
@@ -86,6 +87,8 @@ export default function AddEquipment() {
     setIsSubmitting,
     setErrors,
     setSubmitError,
+    setSuccessMessage,
+    reset,
   } = useEquipmentStore();
 
   // Get params from URL to initialize or preserve state
@@ -121,6 +124,7 @@ export default function AddEquipment() {
       if (error) throw error;
       return data as Category[];
     },
+    staleTime: 30000,
   });
 
   // Find category ID from URL param using useMemo - no state setting in effect
@@ -150,6 +154,7 @@ export default function AddEquipment() {
         return data as Subcategory[];
       },
       enabled: !!effectiveCategoryId,
+      staleTime: 30000,
     });
 
   // Find subcategory ID from URL param
@@ -174,6 +179,7 @@ export default function AddEquipment() {
       if (error) throw error;
       return data as StorageLocation[];
     },
+    staleTime: 30000,
   });
 
   // Fetch models based on effective subcategory
@@ -190,6 +196,7 @@ export default function AddEquipment() {
       return data as Model[];
     },
     enabled: !!effectiveSubcategoryId,
+    staleTime: 30000,
   });
 
   // Find model ID from URL param
@@ -297,7 +304,9 @@ export default function AddEquipment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
-      navigate("/inventory-manager/equipments");
+      reset();
+      setSuccessMessage("Equipment added successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (error) => {
       console.error("Error creating asset:", error);
@@ -364,7 +373,7 @@ export default function AddEquipment() {
 
   if (loadingCategories) {
     return (
-      <div className="flex flex-col items-center justify-center py-32">
+      <div className="min-h-screen flex flex-col items-center justify-center">
         <Loading className="w-10 h-10 text-[#1769ff] mb-4" />
         <p className="text-gray-500 font-medium">Loading form...</p>
       </div>
@@ -383,13 +392,29 @@ export default function AddEquipment() {
           Back to Inventory
         </Link>
 
-        <div className="mb-8">
+        <div className="mb-5">
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mb-4">
+              <div className="flex items-center gap-2">
+                <span>{successMessage}</span>
+              </div>
+            </div>
+          )}
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Add New Equipment
           </h1>
           <p className="text-gray-500 mt-1">
             Fill in the details below to add equipment to your inventory
           </p>
+          <div className="mt-5">
+            <Link
+              to="/inventory-manager/import-equipment"
+              className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
+            >
+              <Upload className="w-4 h-4" />
+              Import from CSV
+            </Link>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -690,12 +715,12 @@ export default function AddEquipment() {
                 Auto-generated SKU
               </label>
               <div className="relative">
-                <Input
+                <input
+                  type="text"
                   value={generatedSku}
                   readOnly
                   placeholder="Select category, subcategory, and model to generate SKU"
-                  className="pr-10 font-mono bg-gray-50 cursor-default"
-                  helperText="Example: LAP-DSK-LEN-001 (Category-Subcategory-Model-Number)"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md font-mono bg-gray-50 cursor-default focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {generatedSku && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -706,7 +731,7 @@ export default function AddEquipment() {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                SKU is automatically generated based on your selections
+                Example: LAP-DSK-LEN-001 (Category-Subcategory-Model-Number)
               </p>
 
               {/* Inline Error */}
