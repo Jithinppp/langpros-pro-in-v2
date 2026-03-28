@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import ScrollToTop from "./components/ScrollToTop";
+import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -18,6 +19,7 @@ function App() {
 
   return (
     <>
+      <Analytics />
       <ScrollToTop />
       <Outlet />
     </>
