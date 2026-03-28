@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Loader2, ChevronDown } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from "@headlessui/react";
 
 interface ArchivedAsset {
   id: string;
@@ -66,7 +67,7 @@ export default function Archive() {
   const limit = 20;
   const offset = (page - 1) * limit;
 
-  // All queries fetch on mount so tab counts and data are always fresh
+  // All queries fetch only when their tab is active - reduces unnecessary fetching
   const { data: assetsData, isLoading: assetsLoading } = useQuery<ArchivedAsset[]>({
     queryKey: ["archived-assets", page],
     queryFn: async () => {
@@ -83,6 +84,7 @@ export default function Archive() {
       if (error) throw error;
       return data || [];
     },
+    enabled: activeTab === "assets",
   });
 
   const { data: assetsCount } = useQuery({
@@ -94,6 +96,7 @@ export default function Archive() {
         .eq("is_active", false);
       return count || 0;
     },
+    enabled: activeTab === "assets",
   });
 
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery<ArchivedCategory[]>({
@@ -108,6 +111,7 @@ export default function Archive() {
       if (error) throw error;
       return data || [];
     },
+    enabled: activeTab === "categories",
   });
 
   const { data: categoriesCount } = useQuery({
@@ -119,6 +123,7 @@ export default function Archive() {
         .eq("is_active", false);
       return count || 0;
     },
+    enabled: activeTab === "categories",
   });
 
   const { data: subcategoriesData, isLoading: subcategoriesLoading } = useQuery<ArchivedSubcategory[]>({
@@ -133,6 +138,7 @@ export default function Archive() {
       if (error) throw error;
       return data || [];
     },
+    enabled: activeTab === "subcategories",
   });
 
   const { data: subcategoriesCount } = useQuery({
@@ -144,6 +150,7 @@ export default function Archive() {
         .eq("is_active", false);
       return count || 0;
     },
+    enabled: activeTab === "subcategories",
   });
 
   const { data: modelsData, isLoading: modelsLoading } = useQuery<ArchivedModel[]>({
@@ -158,6 +165,7 @@ export default function Archive() {
       if (error) throw error;
       return data || [];
     },
+    enabled: activeTab === "models",
   });
 
   const { data: modelsCount } = useQuery({
@@ -169,14 +177,17 @@ export default function Archive() {
         .eq("is_active", false);
       return count || 0;
     },
+    enabled: activeTab === "models",
   });
 
-  const tabs: { key: TabType; label: string; count: number | undefined }[] = [
-    { key: "assets", label: "Assets", count: assetsCount },
-    { key: "categories", label: "Categories", count: categoriesCount },
-    { key: "subcategories", label: "Subcategories", count: subcategoriesCount },
-    { key: "models", label: "Models", count: modelsCount },
-  ];
+  const tabs = useMemo(() => [
+    { key: "assets" as const, label: "Assets", count: assetsCount },
+    { key: "categories" as const, label: "Categories", count: categoriesCount },
+    { key: "subcategories" as const, label: "Subcategories", count: subcategoriesCount },
+    { key: "models" as const, label: "Models", count: modelsCount },
+  ], [assetsCount, categoriesCount, subcategoriesCount, modelsCount]);
+
+  const currentTab = useMemo(() => tabs.find(t => t.key === activeTab), [tabs, activeTab]);
 
   const currentCount =
     activeTab === "assets" ? assetsCount :
@@ -184,11 +195,11 @@ export default function Archive() {
     activeTab === "subcategories" ? subcategoriesCount :
     modelsCount;
 
-  const isLoading =
-    (activeTab === "assets" && assetsLoading) ||
-    (activeTab === "categories" && categoriesLoading) ||
-    (activeTab === "subcategories" && subcategoriesLoading) ||
-    (activeTab === "models" && modelsLoading);
+  const currentLoading =
+    activeTab === "assets" ? assetsLoading :
+    activeTab === "categories" ? categoriesLoading :
+    activeTab === "subcategories" ? subcategoriesLoading :
+    modelsLoading;
 
   const totalPages = Math.ceil((currentCount || 0) / limit);
 
@@ -214,29 +225,67 @@ export default function Archive() {
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-gray-200 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleTabChange(tab.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                activeTab === tab.key
-                  ? "border-[#1769ff] text-[#1769ff]"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab.label}
-              {tab.count !== undefined && tab.count > 0 && (
-                <span className="ml-1.5 bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">
-                  {tab.count}
+        {/* Tab Dropdown */}
+        <div className="mb-6">
+          <Listbox value={activeTab} onChange={handleTabChange}>
+            <div className="relative w-full max-w-xs">
+              <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
+                <span className="text-gray-900 font-medium">
+                  {currentTab?.label}
+                  {currentTab?.count !== undefined && currentTab?.count > 0 && (
+                    <span className="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                      {currentTab?.count}
+                    </span>
+                  )}
                 </span>
-              )}
-            </button>
-          ))}
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                </span>
+              </ListboxButton>
+              <Transition
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                  {tabs.map((tab) => (
+                    <ListboxOption
+                      key={tab.key}
+                      value={tab.key}
+                      className={({ active }) =>
+                        `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                          active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
+                        }`
+                      }
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
+                            {tab.label}
+                            {tab.count !== undefined && tab.count > 0 && (
+                              <span className="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                                {tab.count}
+                              </span>
+                            )}
+                          </span>
+                          {selected && (
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
+                              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </div>
+          </Listbox>
         </div>
 
-        {isLoading ? (
+        {currentLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
