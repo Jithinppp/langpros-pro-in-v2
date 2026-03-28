@@ -120,6 +120,7 @@ export default function AddEquipment() {
       const { data, error } = await supabase
         .from("categories")
         .select("*")
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Category[];
@@ -149,6 +150,7 @@ export default function AddEquipment() {
           .from("subcategories")
           .select("*")
           .eq("category_id", effectiveCategoryId)
+          .eq("is_active", true)
           .order("name");
         if (error) throw error;
         return data as Subcategory[];
@@ -191,6 +193,7 @@ export default function AddEquipment() {
         .from("models")
         .select("*")
         .eq("subcategory_id", effectiveSubcategoryId)
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data as Model[];
@@ -274,6 +277,39 @@ export default function AddEquipment() {
     setModelId("");
     setGeneratedSku("");
   };
+
+  // Check if selected category/subcategory/model still exists (not deleted)
+  // If deleted, clear the selection
+  useEffect(() => {
+    if (categories.length > 0 && effectiveCategoryId) {
+      const categoryExists = categories.some((c) => c.id === effectiveCategoryId);
+      if (!categoryExists) {
+        setCategoryId("");
+        setSubcategoryId("");
+        setModelId("");
+        setGeneratedSku("");
+      }
+    }
+  }, [categories, effectiveCategoryId, setCategoryId, setSubcategoryId, setModelId, setGeneratedSku]);
+
+  useEffect(() => {
+    if (subcategories.length > 0 && effectiveSubcategoryId) {
+      const subcategoryExists = subcategories.some((s) => s.id === effectiveSubcategoryId);
+      if (!subcategoryExists) {
+        setModelId("");
+        setGeneratedSku("");
+      }
+    }
+  }, [subcategories, effectiveSubcategoryId, setModelId, setGeneratedSku]);
+
+  useEffect(() => {
+    if (models.length > 0 && effectiveModelId) {
+      const modelExists = models.some((m) => m.id === effectiveModelId);
+      if (!modelExists) {
+        setGeneratedSku("");
+      }
+    }
+  }, [models, effectiveModelId, setGeneratedSku]);
 
   const handleSubcategoryChange = (value: string) => {
     setSubcategoryId(value);
@@ -433,11 +469,13 @@ export default function AddEquipment() {
                   <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <span
                       className={
-                        effectiveCategoryId ? "text-gray-900" : "text-gray-400"
+                        effectiveCategoryId && selectedCategory ? "text-gray-900" : "text-gray-400"
                       }
                     >
                       {effectiveCategoryId
-                        ? `${categories.find((c) => c.id === effectiveCategoryId)?.name} (${categories.find((c) => c.id === effectiveCategoryId)?.code})`
+                        ? selectedCategory
+                          ? `${selectedCategory.name} (${selectedCategory.code})`
+                          : "Select Category"
                         : "Select Category"}
                     </span>
                     <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -524,7 +562,7 @@ export default function AddEquipment() {
                   <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <span
                       className={
-                        effectiveSubcategoryId
+                        effectiveSubcategoryId && selectedSubcategory
                           ? "text-gray-900"
                           : "text-gray-400"
                       }
@@ -534,8 +572,8 @@ export default function AddEquipment() {
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Loading...
                         </span>
-                      ) : effectiveSubcategoryId ? (
-                        `${subcategories.find((s) => s.id === effectiveSubcategoryId)?.name} (${subcategories.find((s) => s.id === effectiveSubcategoryId)?.code})`
+                      ) : effectiveSubcategoryId && selectedSubcategory ? (
+                        `${selectedSubcategory.name} (${selectedSubcategory.code})`
                       ) : (
                         "Select Subcategory"
                       )}
@@ -622,7 +660,7 @@ export default function AddEquipment() {
                   <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <span
                       className={
-                        effectiveModelId ? "text-gray-900" : "text-gray-400"
+                        effectiveModelId && selectedModel ? "text-gray-900" : "text-gray-400"
                       }
                     >
                       {loadingModels ? (
@@ -630,8 +668,8 @@ export default function AddEquipment() {
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Loading...
                         </span>
-                      ) : effectiveModelId ? (
-                        `${models.find((m) => m.id === effectiveModelId)?.name} (${models.find((m) => m.id === effectiveModelId)?.code})`
+                      ) : effectiveModelId && selectedModel ? (
+                        `${selectedModel.name} (${selectedModel.code})`
                       ) : (
                         "Select Model"
                       )}

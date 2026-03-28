@@ -8,9 +8,11 @@ interface AuthState {
   session: Session | null;
   role: UserRole | null;
   loading: boolean;
+  navigate: ((path: string) => void) | null;
   initializeAuth: () => Promise<void>;
   signIn: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
+  setNavigate: (fn: (path: string) => void) => void;
 }
 
 let isInitialized = false;
@@ -20,6 +22,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   role: null,
   loading: true,
+  navigate: null,
+
+  setNavigate: (fn) => set({ navigate: fn }),
 
   initializeAuth: async () => {
     if (isInitialized) return;
@@ -86,6 +91,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ user: null, session: null, role: null, loading: false });
-    window.location.href = "/";
+    const navigate = get().navigate;
+    if (navigate) {
+      navigate("/");
+    } else {
+      window.location.href = "/";
+    }
   },
 }));

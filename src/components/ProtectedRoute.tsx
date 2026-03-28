@@ -15,9 +15,8 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   // Show loading while checking session
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-3 text-[#1769ff]">
+      <div className="flex items-center justify-center min-h-screen">
         <Loading className="h-8 w-8" />
-        <span className="text-gray-600 font-xs">Initializing session...</span>
       </div>
     );
   }

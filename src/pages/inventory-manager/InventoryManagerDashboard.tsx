@@ -37,9 +37,12 @@ export default function InventoryManagerDashboard() {
     staleTime: 60000,
   });
 
-  const totalItems = isLoading ? "-" : stats?.total ?? "-";
-  const damagedItems = isLoading ? "-" : stats?.damaged ?? "-";
-  const availableItems = isLoading ? "-" : stats?.available ?? "-";
+  const renderStat = (value: number | undefined) => {
+    if (isLoading) {
+      return <span className="text-sm text-gray-400">loading...</span>;
+    }
+    return value ?? 0;
+  };
 
   const roleTitle = user?.email?.split("@")[0] || "Manager";
 
@@ -59,21 +62,21 @@ export default function InventoryManagerDashboard() {
             <div className="w-12 h-12 bg-[#00d26a]/10 rounded-lg flex items-center justify-center mb-4">
               <ArchiveIcon className="w-6 h-6 text-[#00d26a]" />
             </div>
-            <p className="text-4xl font-bold text-gray-900">{totalItems}</p>
+            <p className="text-4xl font-bold text-gray-900">{renderStat(stats?.total)}</p>
             <p className="text-sm text-gray-500 mt-1">Total Items</p>
           </div>
           <div className="border border-gray-100 rounded-lg p-6 hover:border-gray-200 transition-all">
             <div className="w-12 h-12 bg-[#ffbd2e]/10 rounded-lg flex items-center justify-center mb-4">
               <ShieldAlert className="w-6 h-6 text-[#ffbd2e]" />
             </div>
-            <p className="text-4xl font-bold text-gray-900">{damagedItems}</p>
+            <p className="text-4xl font-bold text-gray-900">{renderStat(stats?.damaged)}</p>
             <p className="text-sm text-gray-500 mt-1">Damaged Items</p>
           </div>
           <div className="border border-gray-100 rounded-lg p-6 hover:border-gray-200 transition-all">
             <div className="w-12 h-12 bg-[#1769ff]/10 rounded-lg flex items-center justify-center mb-4">
               <CheckCircle className="w-6 h-6 text-[#1769ff]" />
             </div>
-            <p className="text-4xl font-bold text-gray-900">{availableItems}</p>
+            <p className="text-4xl font-bold text-gray-900">{renderStat(stats?.available)}</p>
             <p className="text-sm text-gray-500 mt-1">Available Items</p>
           </div>
         </div>

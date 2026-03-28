@@ -1,9 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { Link } from "react-router-dom";
-import { ArrowLeft, RotateCcw, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
-import ConfirmModal from "../../components/ConfirmModal";
 
 interface ArchivedAsset {
   id: string;
@@ -62,14 +61,8 @@ interface ArchivedModel {
 type TabType = "assets" | "categories" | "subcategories" | "models";
 
 export default function Archive() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("assets");
   const [page, setPage] = useState(1);
-  const [restoreModal, setRestoreModal] = useState<{ open: boolean; id: string | null; type: TabType | null }>({
-    open: false,
-    id: null,
-    type: null,
-  });
   const limit = 20;
   const offset = (page - 1) * limit;
 
@@ -178,103 +171,6 @@ export default function Archive() {
     },
   });
 
-  // Restore functions that also invalidate parent archive tabs
-  const restoreAllArchiveQueries = () => {
-    queryClient.invalidateQueries({ queryKey: ["archived-assets"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-assets-count"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-categories"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-categories-count"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-subcategories"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-subcategories-count"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-models"] });
-    queryClient.invalidateQueries({ queryKey: ["archived-models-count"] });
-  };
-
-  const restoreAssetMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("restore_asset", { p_id: id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      restoreAllArchiveQueries();
-      closeRestoreModal();
-    },
-  });
-
-  const restoreCategoryMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("restore_category", { p_id: id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["archived-categories"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-categories-count"] });
-      closeRestoreModal();
-    },
-  });
-
-  const restoreSubcategoryMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("restore_subcategory", { p_id: id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["archived-subcategories"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-subcategories-count"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-categories"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-categories-count"] });
-      closeRestoreModal();
-    },
-  });
-
-  const restoreModelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("restore_model", { p_id: id });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["archived-models"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-models-count"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-subcategories"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-subcategories-count"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-categories"] });
-      queryClient.invalidateQueries({ queryKey: ["archived-categories-count"] });
-      closeRestoreModal();
-    },
-  });
-
-  const handleRestore = (id: string, type: TabType) => {
-    setRestoreModal({ open: true, id, type });
-  };
-
-  const closeRestoreModal = () => {
-    setRestoreModal({ open: false, id: null, type: null });
-  };
-
-  const confirmRestore = () => {
-    if (!restoreModal.id || !restoreModal.type) return;
-    switch (restoreModal.type) {
-      case "assets":
-        restoreAssetMutation.mutate(restoreModal.id);
-        break;
-      case "categories":
-        restoreCategoryMutation.mutate(restoreModal.id);
-        break;
-      case "subcategories":
-        restoreSubcategoryMutation.mutate(restoreModal.id);
-        break;
-      case "models":
-        restoreModelMutation.mutate(restoreModal.id);
-        break;
-    }
-  };
-
-  const isRestoring =
-    restoreAssetMutation.isPending ||
-    restoreCategoryMutation.isPending ||
-    restoreSubcategoryMutation.isPending ||
-    restoreModelMutation.isPending;
-
   const tabs: { key: TabType; label: string; count: number | undefined }[] = [
     { key: "assets", label: "Assets", count: assetsCount },
     { key: "categories", label: "Categories", count: categoriesCount },
@@ -300,9 +196,6 @@ export default function Archive() {
     setActiveTab(tab);
     setPage(1);
   };
-
-  const isPending = (type: TabType) =>
-    restoreModal.type === type && isRestoring;
 
   return (
     <div className="bg-white min-h-screen">
@@ -379,16 +272,6 @@ export default function Archive() {
                             <td className="px-4 py-3 text-sm text-gray-500">{asset.storage_locations?.name || "-"}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{asset.status}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{new Date(asset.updated_at).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => handleRestore(asset.id, "assets")}
-                                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1769ff]/80"
-                                disabled={isPending("assets")}
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                                Restore
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -424,16 +307,6 @@ export default function Archive() {
                             <td className="px-4 py-3 text-sm text-gray-500 font-mono">{cat.code}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{cat.description || "-"}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{new Date(cat.created_at).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => handleRestore(cat.id, "categories")}
-                                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1769ff]/80"
-                                disabled={isPending("categories")}
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                                Restore
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -473,16 +346,6 @@ export default function Archive() {
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500">{sub.description || "-"}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{new Date(sub.created_at).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => handleRestore(sub.id, "subcategories")}
-                                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1769ff]/80"
-                                disabled={isPending("subcategories")}
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                                Restore
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -524,16 +387,6 @@ export default function Archive() {
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500">{model.description || "-"}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{new Date(model.created_at).toLocaleDateString()}</td>
-                            <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => handleRestore(model.id, "models")}
-                                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1769ff]/80"
-                                disabled={isPending("models")}
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                                Restore
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -567,16 +420,6 @@ export default function Archive() {
             )}
           </>
         )}
-
-        <ConfirmModal
-          isOpen={restoreModal.open}
-          onCancel={closeRestoreModal}
-          onConfirm={confirmRestore}
-          title="Restore Item"
-          message="Restoring this item will also reactivate any inactive parent items (category, subcategory, model) in the hierarchy. Continue?"
-          confirmLabel="Restore"
-          variant="primary"
-        />
       </div>
     </div>
   );

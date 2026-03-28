@@ -1,15 +1,20 @@
 import { Outlet, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import Button from "./Button";
+import { useState } from "react";
 
 const Layout = () => {
   const { user, signOut, loading } = useAuthStore();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
     try {
       await signOut();
     } catch (error) {
       console.error("Error signing out:", error);
+      setIsSigningOut(false);
     }
   };
 
@@ -39,9 +44,9 @@ const Layout = () => {
                 size="md"
                 variant="secondary"
                 onClick={handleSignOut}
-                disabled={loading}
+                disabled={loading || isSigningOut}
               >
-                {loading ? "Signing out..." : "Sign out"}
+                {loading || isSigningOut ? "Signing out..." : "Sign out"}
               </Button>
             </div>
           </div>

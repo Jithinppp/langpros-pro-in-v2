@@ -1,13 +1,30 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from "@headlessui/react";
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOptions,
+  ListboxOption,
+  Transition,
+} from "@headlessui/react";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import ConfirmModal from "../../components/ConfirmModal";
 import { useSubcategoryStore } from "../../store/subcategoryStore";
-import { ChevronLeft, Trash2, Folder, Pencil, Save, ChevronDown, Check, ChevronRight, ChevronFirst, ChevronLast } from "lucide-react";
+import {
+  ChevronLeft,
+  Trash2,
+  Folder,
+  Pencil,
+  Save,
+  ChevronDown,
+  Check,
+  ChevronRight,
+  ChevronFirst,
+  ChevronLast,
+} from "lucide-react";
 
 interface Subcategory {
   id: string;
@@ -66,7 +83,8 @@ export default function ManageSubcategories() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [subcategoryToDelete, setSubcategoryToDelete] = useState<Subcategory | null>(null);
+  const [subcategoryToDelete, setSubcategoryToDelete] =
+    useState<Subcategory | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -171,7 +189,9 @@ export default function ManageSubcategories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("soft_delete_subcategory", { p_id: id });
+      const { error } = await supabase.rpc("soft_delete_subcategory", {
+        p_id: id,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -306,12 +326,24 @@ export default function ManageSubcategories() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Category <span className="text-red-500">*</span>
               </label>
-              <Listbox value={selectedCategoryId} onChange={handleCategoryChange}>
+              <Listbox
+                value={selectedCategoryId}
+                onChange={handleCategoryChange}
+              >
                 <div className="relative">
                   <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
-                    <span className={selectedCategoryId ? "text-gray-900" : "text-gray-400"}>
+                    <span
+                      className={
+                        selectedCategoryId ? "text-gray-900" : "text-gray-400"
+                      }
+                    >
                       {selectedCategoryId
-                        ? categories.find((c) => c.id === selectedCategoryId)?.name + " (" + categories.find((c) => c.id === selectedCategoryId)?.code + ")"
+                        ? categories.find((c) => c.id === selectedCategoryId)
+                            ?.name +
+                          " (" +
+                          categories.find((c) => c.id === selectedCategoryId)
+                            ?.code +
+                          ")"
                         : "Select a category"}
                     </span>
                     <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -330,13 +362,17 @@ export default function ManageSubcategories() {
                           value={cat.id}
                           className={({ active }) =>
                             `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                              active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
+                              active
+                                ? "bg-blue-50 text-[#1769ff]"
+                                : "text-gray-900"
                             }`
                           }
                         >
                           {({ selected }) => (
                             <>
-                              <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
+                              <span
+                                className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                              >
                                 {cat.name} ({cat.code})
                               </span>
                               {selected && (
@@ -372,7 +408,11 @@ export default function ManageSubcategories() {
                 label="Subcategory Code"
                 type="text"
                 value={formCode}
-                onChange={(e) => setFormCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+                onChange={(e) =>
+                  setFormCode(
+                    e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""),
+                  )
+                }
                 error={formErrors.code}
                 placeholder="e.g., GAM-LAP"
                 required
@@ -393,7 +433,11 @@ export default function ManageSubcategories() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <Button type="submit" variant="primary" disabled={formIsSubmitting}>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={formIsSubmitting}
+              >
                 <Save className="w-4 h-4 mr-2" />
                 {formIsSubmitting ? "Saving..." : "Save Subcategory"}
               </Button>
@@ -444,118 +488,183 @@ export default function ManageSubcategories() {
                     key={subcategory.id}
                     className="p-4 hover:bg-gray-50 transition-colors"
                   >
-                  {editingId === subcategory.id ? (
-                    <form onSubmit={handleUpdate} className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <Input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          error={editErrors.name}
-                          placeholder="Name"
-                          className="mb-0"
-                        />
-                        <Input
-                          type="text"
-                          value={editCode}
-                          onChange={(e) => setEditCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
-                          error={editErrors.code}
-                          placeholder="Code"
-                          className="mb-0"
-                          helperText="e.g., GAM-LAP"
-                        />
-                        <select
-                          value={editCategoryId}
-                          onChange={(e) => setEditCategoryId(e.target.value)}
-                          className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white ${
-                            editErrors.categoryId
-                              ? "border-red-300"
-                              : "border-gray-300"
-                          }`}
-                        >
-                          <option value="">Select category</option>
-                          {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          size="sm"
-                          disabled={isEditing}
-                        >
-                          <Save className="w-4 h-4 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setEditingId(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-lg font-medium text-gray-900">
-                            {subcategory.name}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                            {subcategory.code}
-                          </span>
-                          {subcategory.categories && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
-                              {subcategory.categories.name} (
-                              {subcategory.categories.code})
-                            </span>
+                    {editingId === subcategory.id ? (
+                      <form onSubmit={handleUpdate} className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <Input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            error={editErrors.name}
+                            placeholder="Name"
+                            className="mb-0"
+                          />
+                          <Input
+                            type="text"
+                            value={editCode}
+                            onChange={(e) =>
+                              setEditCode(
+                                e.target.value
+                                  .toUpperCase()
+                                  .replace(/[^A-Z0-9-]/g, ""),
+                              )
+                            }
+                            error={editErrors.code}
+                            placeholder="Code"
+                            className="mb-0"
+                            helperText="e.g., GAM-LAP"
+                          />
+                        </div>
+                        <div>
+                          <Listbox
+                            value={editCategoryId}
+                            onChange={setEditCategoryId}
+                          >
+                            <div className="relative">
+                              <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
+                                <span
+                                  className={
+                                    editCategoryId
+                                      ? "text-gray-900"
+                                      : "text-gray-400"
+                                  }
+                                >
+                                  {editCategoryId
+                                    ? categories.find(
+                                        (c) => c.id === editCategoryId,
+                                      )?.name +
+                                      " (" +
+                                      categories.find(
+                                        (c) => c.id === editCategoryId,
+                                      )?.code +
+                                      ")"
+                                    : "Select a category"}
+                                </span>
+                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                                </span>
+                              </ListboxButton>
+                              <Transition
+                                leave="transition ease-in duration-100"
+                                leaveFrom="opacity-100"
+                                leaveTo="opacity-0"
+                              >
+                                <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                                  {categories.map((cat) => (
+                                    <ListboxOption
+                                      key={cat.id}
+                                      value={cat.id}
+                                      className={({ active }) =>
+                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                          active
+                                            ? "bg-blue-50 text-[#1769ff]"
+                                            : "text-gray-900"
+                                        }`
+                                      }
+                                    >
+                                      {({ selected }) => (
+                                        <>
+                                          <span
+                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                          >
+                                            {cat.name} ({cat.code})
+                                          </span>
+                                          {selected && (
+                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
+                                              <Check className="h-5 w-5" />
+                                            </span>
+                                          )}
+                                        </>
+                                      )}
+                                    </ListboxOption>
+                                  ))}
+                                </ListboxOptions>
+                              </Transition>
+                            </div>
+                          </Listbox>
+                          {editErrors.categoryId && (
+                            <p className="mt-1.5 text-sm text-red-500">
+                              {editErrors.categoryId}
+                            </p>
                           )}
                         </div>
-                        {subcategory.description && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {subcategory.description}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={isEditing}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-lg font-medium text-gray-900">
+                              {subcategory.name}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                              {subcategory.code}
+                            </span>
+                            {subcategory.categories && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
+                                {subcategory.categories.name} (
+                                {subcategory.categories.code})
+                              </span>
+                            )}
+                          </div>
+                          {subcategory.description && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {subcategory.description}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1">
+                            Created:{" "}
+                            {new Date(
+                              subcategory.created_at,
+                            ).toLocaleDateString()}
                           </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          Created:{" "}
-                          {new Date(
-                            subcategory.created_at,
-                          ).toLocaleDateString()}
-                        </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(subcategory)}
+                            className="p-2 text-gray-400 hover:text-[#1769ff] hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit subcategory"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(subcategory)}
+                            disabled={deleteId === subcategory.id}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete subcategory"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleEdit(subcategory)}
-                          className="p-2 text-gray-400 hover:text-[#1769ff] hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit subcategory"
-                        >
-                          <Pencil className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(subcategory)}
-                          disabled={deleteId === subcategory.id}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete subcategory"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                ))}
               </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
                   <div className="text-sm text-gray-500">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, subcategories.length)} of {subcategories.length} subcategories
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                    {Math.min(currentPage * itemsPerPage, subcategories.length)}{" "}
+                    of {subcategories.length} subcategories
                   </div>
                   <div className="flex items-center gap-1">
                     <button

@@ -19,8 +19,10 @@ interface Category {
 export default function ManageCategories() {
   const queryClient = useQueryClient();
   const store = useCategoryStore();
-  
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+    null,
+  );
 
   const {
     editingId,
@@ -123,7 +125,9 @@ export default function ManageCategories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("soft_delete_category", { p_id: id });
+      const { error } = await supabase.rpc("soft_delete_category", {
+        p_id: id,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -253,7 +257,11 @@ export default function ManageCategories() {
                 label="Category Code"
                 type="text"
                 value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                onChange={(e) =>
+                  setCode(
+                    e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+                  )
+                }
                 error={errors.code}
                 placeholder="e.g., LAP"
                 required
@@ -323,7 +331,7 @@ export default function ManageCategories() {
                 >
                   {editingId === category.id ? (
                     <form onSubmit={handleUpdate} className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <Input
                           type="text"
                           value={editName}
@@ -335,18 +343,25 @@ export default function ManageCategories() {
                         <Input
                           type="text"
                           value={editCode}
-                          onChange={(e) => setEditCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                          onChange={(e) =>
+                            setEditCode(
+                              e.target.value
+                                .toUpperCase()
+                                .replace(/[^A-Z0-9]/g, ""),
+                            )
+                          }
                           error={editErrors.code}
                           placeholder="Code"
                           className="mb-0"
                           helperText="e.g., LAP"
                         />
-                        <input
-                          type="text"
+                      </div>
+                      <div>
+                        <textarea
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           placeholder="Description (optional)"
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] focus:border-transparent"
                         />
                       </div>
                       <div className="flex items-center gap-2">

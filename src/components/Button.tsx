@@ -3,7 +3,7 @@ import Loading from "./Loading";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "danger" | "ghost" | "warning";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
 }
@@ -27,6 +27,8 @@ const Button = ({
       "text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-offset-2 focus:ring-[#1769ff] disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
     danger:
       "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800",
+    warning:
+      "bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500 active:bg-amber-700",
     ghost:
       "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-500 dark:text-gray-300 dark:hover:bg-gray-800",
   };

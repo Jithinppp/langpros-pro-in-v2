@@ -9,7 +9,8 @@ interface ConfirmModalProps {
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
-  variant?: "danger" | "primary";
+  variant?: "danger" | "primary" | "warning";
+  onConfirmCustom?: () => void;
 }
 
 export default function ConfirmModal({
@@ -21,8 +22,17 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
   variant = "danger",
+  onConfirmCustom,
 }: ConfirmModalProps) {
   if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    if (onConfirmCustom) {
+      onConfirmCustom();
+    } else {
+      onConfirm();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -50,7 +60,7 @@ export default function ConfirmModal({
           <Button variant="secondary" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant={variant} onClick={onConfirm}>
+          <Button variant={variant === "warning" ? "primary" : variant} onClick={handleConfirm}>
             {confirmLabel}
           </Button>
         </div>

@@ -1,13 +1,30 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from "@headlessui/react";
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOptions,
+  ListboxOption,
+  Transition,
+} from "@headlessui/react";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import ConfirmModal from "../../components/ConfirmModal";
 import { useModelStore } from "../../store/modelStore";
-import { ChevronLeft, ChevronRight, ChevronFirst, ChevronLast, Trash2, Package, Pencil, Save, ChevronDown, Check } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronFirst,
+  ChevronLast,
+  Trash2,
+  Package,
+  Pencil,
+  Save,
+  ChevronDown,
+  Check,
+} from "lucide-react";
 
 interface Model {
   id: string;
@@ -97,9 +114,7 @@ export default function ManageModels() {
       if (!formCategoryId || !formSubcategoryId) return [];
       const { data, error } = await supabase
         .from("models")
-        .select(
-          "*, subcategories:subcategories(id, name, code, category_id)",
-        )
+        .select("*, subcategories:subcategories(id, name, code, category_id)")
         .eq("subcategory_id", formSubcategoryId)
         .eq("is_active", true)
         .order("name");
@@ -234,7 +249,8 @@ export default function ManageModels() {
     if (!code.trim()) newErrors.code = "Model code is required";
     if (!brand.trim()) newErrors.brand = "Brand is required";
     if (!formCategoryId) newErrors.categoryId = "Please select a category";
-    if (!formSubcategoryId) newErrors.subcategoryId = "Please select a subcategory";
+    if (!formSubcategoryId)
+      newErrors.subcategoryId = "Please select a subcategory";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -242,8 +258,7 @@ export default function ManageModels() {
   const validateEdit = () => {
     const newErrors: Record<string, string> = {};
     if (!editName.trim()) newErrors.name = "Model name is required";
-    if (!editCode.trim())
-      newErrors.code = "Model code is required";
+    if (!editCode.trim()) newErrors.code = "Model code is required";
     if (!editBrand.trim()) newErrors.brand = "Brand is required";
     if (!editSubcategoryId)
       newErrors.subcategoryId = "Please select a subcategory";
@@ -351,10 +366,19 @@ export default function ManageModels() {
                 </label>
                 <Listbox value={formCategoryId} onChange={handleCategoryChange}>
                   <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
-                      <span className={formCategoryId ? "text-gray-900" : "text-gray-400"}>
+                    <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
+                      <span
+                        className={
+                          formCategoryId ? "text-gray-900" : "text-gray-400"
+                        }
+                      >
                         {formCategoryId
-                          ? categories.find((c) => c.id === formCategoryId)?.name + " (" + categories.find((c) => c.id === formCategoryId)?.code + ")"
+                          ? categories.find((c) => c.id === formCategoryId)
+                              ?.name +
+                            " (" +
+                            categories.find((c) => c.id === formCategoryId)
+                              ?.code +
+                            ")"
                           : "Select a category"}
                       </span>
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -373,13 +397,17 @@ export default function ManageModels() {
                             value={cat.id}
                             className={({ active }) =>
                               `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
+                                active
+                                  ? "bg-blue-50 text-[#1769ff]"
+                                  : "text-gray-900"
                               }`
                             }
                           >
                             {({ selected }) => (
                               <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
+                                <span
+                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                >
                                   {cat.name} ({cat.code})
                                 </span>
                                 {selected && (
@@ -405,12 +433,29 @@ export default function ManageModels() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Subcategory <span className="text-red-500">*</span>
                 </label>
-                <Listbox value={formSubcategoryId} onChange={setFormSubcategoryId}>
+                <Listbox
+                  value={formSubcategoryId}
+                  onChange={setFormSubcategoryId}
+                >
                   <div className="relative">
-                    <ListboxButton className={`relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300 ${!formCategoryId ? "bg-gray-100 cursor-not-allowed opacity-50" : ""}`} disabled={!formCategoryId}>
-                      <span className={formSubcategoryId ? "text-gray-900" : "text-gray-400"}>
+                    <ListboxButton
+                      className={`relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300 ${!formCategoryId ? "bg-gray-100 cursor-not-allowed opacity-50" : ""}`}
+                      disabled={!formCategoryId}
+                    >
+                      <span
+                        className={
+                          formSubcategoryId ? "text-gray-900" : "text-gray-400"
+                        }
+                      >
                         {formSubcategoryId
-                          ? subcategories.find((s) => s.id === formSubcategoryId)?.name + " (" + subcategories.find((s) => s.id === formSubcategoryId)?.code + ")"
+                          ? subcategories.find(
+                              (s) => s.id === formSubcategoryId,
+                            )?.name +
+                            " (" +
+                            subcategories.find(
+                              (s) => s.id === formSubcategoryId,
+                            )?.code +
+                            ")"
                           : "Select a subcategory"}
                       </span>
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -429,13 +474,17 @@ export default function ManageModels() {
                             value={sub.id}
                             className={({ active }) =>
                               `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"
+                                active
+                                  ? "bg-blue-50 text-[#1769ff]"
+                                  : "text-gray-900"
                               }`
                             }
                           >
                             {({ selected }) => (
                               <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
+                                <span
+                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                >
                                   {sub.name} ({sub.code})
                                 </span>
                                 {selected && (
@@ -472,7 +521,11 @@ export default function ManageModels() {
                 label="Model Code"
                 type="text"
                 value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+                onChange={(e) =>
+                  setCode(
+                    e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
+                  )
+                }
                 error={errors.code}
                 placeholder="e.g., 300X"
                 required
@@ -552,153 +605,182 @@ export default function ManageModels() {
                     key={model.id}
                     className="p-4 hover:bg-gray-50 transition-colors"
                   >
-                  {editingId === model.id ? (
-                    <form onSubmit={handleUpdate} className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Category
-                          </label>
-                          <select
-                            value={editSubcategoryId ? allSubcategories.find(s => s.id === editSubcategoryId)?.category_id || "" : ""}
-                            onChange={(e) => {
-                              const newCatId = e.target.value;
-                              const filteredSubs = allSubcategories.filter(s => s.category_id === newCatId);
-                              setEditSubcategoryId(filteredSubs[0]?.id || "");
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white"
-                          >
-                            <option value="">Select a category</option>
-                            {categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name} ({cat.code})
-                              </option>
-                            ))}
-                          </select>
+                    {editingId === model.id ? (
+                      <form onSubmit={handleUpdate} className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Category
+                            </label>
+                            <select
+                              value={
+                                editSubcategoryId
+                                  ? allSubcategories.find(
+                                      (s) => s.id === editSubcategoryId,
+                                    )?.category_id || ""
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const newCatId = e.target.value;
+                                const filteredSubs = allSubcategories.filter(
+                                  (s) => s.category_id === newCatId,
+                                );
+                                setEditSubcategoryId(filteredSubs[0]?.id || "");
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white"
+                            >
+                              <option value="">Select a category</option>
+                              {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                  {cat.name} ({cat.code})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Subcategory
+                            </label>
+                            <select
+                              value={editSubcategoryId}
+                              onChange={(e) =>
+                                setEditSubcategoryId(e.target.value)
+                              }
+                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white ${
+                                editErrors.subcategoryId
+                                  ? "border-red-300"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              <option value="">Select a subcategory</option>
+                              {allSubcategories
+                                .filter(
+                                  (s) =>
+                                    s.category_id ===
+                                    (allSubcategories.find(
+                                      (s) => s.id === editSubcategoryId,
+                                    )?.category_id ||
+                                      allSubcategories.find(
+                                        (s) => s.id === editSubcategoryId,
+                                      )?.category_id),
+                                )
+                                .map((sub) => (
+                                  <option key={sub.id} value={sub.id}>
+                                    {sub.name} ({sub.code})
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Subcategory
-                          </label>
-                          <select
-                            value={editSubcategoryId}
-                            onChange={(e) => setEditSubcategoryId(e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white ${
-                              editErrors.subcategoryId
-                                ? "border-red-300"
-                                : "border-gray-300"
-                            }`}
+                        <Input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          error={editErrors.name}
+                          placeholder="Model name"
+                          label="Model Name"
+                        />
+                        <Input
+                          type="text"
+                          value={editCode}
+                          onChange={(e) =>
+                            setEditCode(
+                              e.target.value
+                                .toUpperCase()
+                                .replace(/[^A-Z0-9]/g, ""),
+                            )
+                          }
+                          error={editErrors.code}
+                          placeholder="Model code"
+                          label="Model Code"
+                          helperText="e.g., 300X"
+                        />
+                        <Input
+                          type="text"
+                          value={editBrand}
+                          onChange={(e) => setEditBrand(e.target.value)}
+                          error={editErrors.brand}
+                          placeholder="Brand"
+                          label="Brand"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={isEditing}
                           >
-                            <option value="">Select a subcategory</option>
-                            {allSubcategories.filter(s => s.category_id === (allSubcategories.find(s => s.id === editSubcategoryId)?.category_id || allSubcategories.find(s => s.id === editSubcategoryId)?.category_id)).map((sub) => (
-                              <option key={sub.id} value={sub.id}>
-                                {sub.name} ({sub.code})
-                              </option>
-                            ))}
-                          </select>
+                            <Save className="w-4 h-4 mr-1" />
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
-                      </div>
-                      <Input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        error={editErrors.name}
-                        placeholder="Model name"
-                        label="Model Name"
-                      />
-                      <Input
-                        type="text"
-                        value={editCode}
-                        onChange={(e) => setEditCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-                        error={editErrors.code}
-                        placeholder="Model code"
-                        label="Model Code"
-                        helperText="e.g., 300X"
-                      />
-                      <Input
-                        type="text"
-                        value={editBrand}
-                        onChange={(e) => setEditBrand(e.target.value)}
-                        error={editErrors.brand}
-                        placeholder="Brand"
-                        label="Brand"
-                      />
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          size="sm"
-                          disabled={isEditing}
-                        >
-                          <Save className="w-4 h-4 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setEditingId(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-lg font-medium text-gray-900">
-                            {model.name}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                            {model.code}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
-                            {model.brand}
-                          </span>
-                          {model.subcategories && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
-                              {model.subcategories.name} (
-                              {model.subcategories.code})
+                      </form>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-lg font-medium text-gray-900">
+                              {model.name}
                             </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                              {model.code}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                              {model.brand}
+                            </span>
+                            {model.subcategories && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
+                                {model.subcategories.name} (
+                                {model.subcategories.code})
+                              </span>
+                            )}
+                          </div>
+                          {model.description && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {model.description}
+                            </p>
                           )}
-                        </div>
-                        {model.description && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {model.description}
+                          <p className="text-xs text-gray-400 mt-1">
+                            Created:{" "}
+                            {new Date(model.created_at).toLocaleDateString()}
                           </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          Created:{" "}
-                          {new Date(model.created_at).toLocaleDateString()}
-                        </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleEdit(model)}
+                            className="p-2 text-gray-400 hover:text-[#1769ff] hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit model"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(model)}
+                            disabled={deleteId === model.id}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete model"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleEdit(model)}
-                          className="p-2 text-gray-400 hover:text-[#1769ff] hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit model"
-                        >
-                          <Pencil className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(model)}
-                          disabled={deleteId === model.id}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete model"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                ))}
               </div>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
                   <div className="text-sm text-gray-500">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, models.length)} of {models.length} models
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                    {Math.min(currentPage * itemsPerPage, models.length)} of{" "}
+                    {models.length} models
                   </div>
                   <div className="flex items-center gap-1">
                     <button

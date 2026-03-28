@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Transition } from "@headlessui/react";
 import { supabase } from "../../lib/supabase";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Search, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Loader2, ChevronDown, Check } from "lucide-react";
 import Input from "../../components/Input";
 
 interface ActivityRecord {
@@ -172,36 +173,121 @@ export default function Activities() {
             </div>
           </div>
 
-          <select
-            value={tableFilter}
-            onChange={(e) => {
-              setTableFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]"
-          >
-            <option value="">All Tables</option>
-            <option value="assets">Equipment</option>
-            <option value="categories">Categories</option>
-            <option value="subcategories">Subcategories</option>
-            <option value="models">Models</option>
-            <option value="storage_locations">Storage Locations</option>
-          </select>
+          <Listbox value={tableFilter} onChange={(val) => { setTableFilter(val); setPage(1); }}>
+            <div className="relative w-40">
+              <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
+                <span className={tableFilter ? "text-gray-900" : "text-gray-500"}>
+                  {tableFilter ? TABLE_LABELS[tableFilter] || tableFilter : "All Tables"}
+                </span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                </span>
+              </ListboxButton>
+              <Transition
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <ListboxOption
+                    value=""
+                    className={({ active }) =>
+                      `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`
+                    }
+                  >
+                    {({ selected }) => (
+                      <>
+                        <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>All Tables</span>
+                        {selected && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
+                            <Check className="h-4 w-4" />
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </ListboxOption>
+                  {Object.entries(TABLE_LABELS).map(([key, label]) => (
+                    <ListboxOption
+                      key={key}
+                      value={key}
+                      className={({ active }) =>
+                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`
+                    }
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>{label}</span>
+                          {selected && (
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
+                              <Check className="h-4 w-4" />
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </div>
+          </Listbox>
 
-          <select
-            value={actionFilter}
-            onChange={(e) => {
-              setActionFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]"
-          >
-            <option value="">All Actions</option>
-            <option value="create">Created</option>
-            <option value="update">Updated</option>
-            <option value="delete">Deleted</option>
-            <option value="restore">Restored</option>
-          </select>
+          <Listbox value={actionFilter} onChange={(val) => { setActionFilter(val); setPage(1); }}>
+            <div className="relative w-36">
+              <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
+                <span className={actionFilter ? "text-gray-900" : "text-gray-500"}>
+                  {actionFilter ? ACTION_LABELS[actionFilter]?.label || actionFilter : "All Actions"}
+                </span>
+                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                </span>
+              </ListboxButton>
+              <Transition
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <ListboxOption
+                    value=""
+                    className={({ active }) =>
+                      `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`
+                    }
+                  >
+                    {({ selected }) => (
+                      <>
+                        <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>All Actions</span>
+                        {selected && (
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
+                            <Check className="h-4 w-4" />
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </ListboxOption>
+                  {Object.entries(ACTION_LABELS).map(([key, { label }]) => (
+                    <ListboxOption
+                      key={key}
+                      value={key}
+                      className={({ active }) =>
+                        `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-[#1769ff]" : "text-gray-900"}`
+                    }
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>{label}</span>
+                          {selected && (
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
+                              <Check className="h-4 w-4" />
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </div>
+          </Listbox>
         </div>
 
         {/* Table */}
