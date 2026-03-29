@@ -208,7 +208,7 @@ export default function SingleEquipment() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-16">
-      <div className="max-w-6xl mx-auto px-6 py-10 animate-in fade-in duration-500">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
         {deleteError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">{deleteError}</p>

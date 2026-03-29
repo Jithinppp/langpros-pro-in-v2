@@ -47,7 +47,7 @@ export default function AddStorageLocation() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-3xl mx-auto px-6 py-10 animate-in fade-in duration-500">
+      <div className="max-w-3xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
         {/* Breadcrumb and Title */}
         <Link
           to="/inventory-manager/add-equipment"

@@ -342,6 +342,7 @@ export default function AddEquipment() {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       reset();
       setSuccessMessage("Equipment added successfully!");
+      window.scrollTo(0, 0);
       setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (error) => {
@@ -418,7 +419,7 @@ export default function AddEquipment() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-4xl mx-auto px-6 py-10 animate-in fade-in duration-500">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
         {/* Breadcrumb and Title */}
         <Link
           to="/inventory-manager"

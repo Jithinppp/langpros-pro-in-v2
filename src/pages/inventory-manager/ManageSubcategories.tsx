@@ -284,7 +284,7 @@ export default function ManageSubcategories() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-4xl mx-auto px-6 py-10 animate-in fade-in duration-500">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
         <Link
           to="/inventory-manager/add-equipment"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"

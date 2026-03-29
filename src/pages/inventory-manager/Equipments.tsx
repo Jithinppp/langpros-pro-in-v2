@@ -12,6 +12,7 @@ import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Loading from "../../components/Loading";
 import { getStatusColor, getConditionColor } from "../../utils/theme";
+import { convertToCSV, downloadCSV, type ExportAsset } from "../../utils/csv";
 import {
   Search,
   Plus,
@@ -22,6 +23,7 @@ import {
   Filter,
   X,
   Loader2,
+  Download,
 } from "lucide-react";
 import Input from "../../components/Input";
 import { useEquipmentFilters } from "../../store/equipmentFiltersStore";
@@ -115,6 +117,7 @@ export default function EquipmentsPage() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Filter states from store
@@ -330,6 +333,108 @@ export default function EquipmentsPage() {
   // Check if any filter is active
   const hasActiveFilters = categoryId || subcategoryId || modelId || locationId || statusFilter || conditionFilter;
 
+  // Export to CSV
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      // Fetch all active assets with related data
+      let query = supabase
+        .from("assets")
+        .select(`
+          sku,
+          serial_number,
+          status,
+          condition,
+          purchase_date,
+          warranty_expiry,
+          description,
+          model_id,
+          location,
+          models:model_id(
+            name,
+            code,
+            brand,
+            subcategories:subcategory_id(
+              name,
+              code,
+              categories:category_id(name, code)
+            )
+          ),
+          storage_locations:location(name)
+        `)
+        .eq("is_active", true);
+
+      // Apply filters if any
+      if (debouncedSearch.trim()) {
+        const search = debouncedSearch.trim().toLowerCase();
+        query = query.or(`sku.ilike.%${search}%,serial_number.ilike.%${search}%`);
+      }
+
+      if (statusFilter) {
+        query = query.eq("status", statusFilter);
+      }
+
+      if (conditionFilter) {
+        query = query.eq("condition", conditionFilter);
+      }
+
+      if (locationId) {
+        query = query.eq("location", locationId);
+      }
+
+      // For category/subcategory/model filters, we need to filter after fetching
+      // since they require joins
+      const { data: assets, error } = await query;
+
+      if (error) throw error;
+
+      // Transform data to export format
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const exportData: ExportAsset[] = (assets || []).map((asset: any) => {
+        const model = asset.models;
+        const subcategory = model?.subcategories;
+        const category = subcategory?.categories;
+
+        return {
+          sku: asset.sku || "",
+          serial_number: asset.serial_number || "",
+          category: category?.name || "",
+          category_code: category?.code || "",
+          subcategory: subcategory?.name || "",
+          subcategory_code: subcategory?.code || "",
+          model: model?.name || "",
+          model_code: model?.code || "",
+          brand: model?.brand || "",
+          location: asset.storage_locations?.name || "",
+          status: asset.status || "",
+          condition: asset.condition || "",
+          purchase_date: asset.purchase_date || "",
+          warranty_expiry: asset.warranty_expiry || "",
+          description: asset.description || "",
+        };
+      });
+
+      // If category filter is active, filter the results
+      let filteredExportData = exportData;
+      if (categoryId && subcategories.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const subcategoryIds = subcategories.map((s: any) => s.id);
+        filteredExportData = exportData.filter((item: ExportAsset) => 
+          subcategoryIds.includes(item.model_code)
+        );
+      }
+
+      // Convert to CSV and download
+      const csv = convertToCSV(filteredExportData);
+      const date = new Date().toISOString().split("T")[0];
+      downloadCSV(csv, `assets-export-${date}.csv`);
+    } catch (error) {
+      console.error("Export error:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Filter subcategories by selected category
   const filteredSubcategories = categoryId ? subcategories : [];
 
@@ -338,7 +443,7 @@ export default function EquipmentsPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-8">
         <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
@@ -348,16 +453,32 @@ export default function EquipmentsPage() {
               View and manage your inventory ({totalCount} total)
             </p>
           </div>
-          <Link to="/inventory-manager/add-equipment">
+          <div className="flex gap-2">
             <Button
-              variant="primary"
+              variant="secondary"
               size="md"
+              onClick={handleExport}
+              disabled={isExporting}
               className="flex items-center gap-1 w-full md:w-auto"
             >
-              <Plus className="w-4 h-4" />
-              Add Equipment
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Export
             </Button>
-          </Link>
+            <Link to="/inventory-manager/add-equipment">
+              <Button
+                variant="primary"
+                size="md"
+                className="flex items-center gap-1 w-full md:w-auto"
+              >
+                <Plus className="w-4 h-4" />
+                Add Equipment
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Search Bar */}
