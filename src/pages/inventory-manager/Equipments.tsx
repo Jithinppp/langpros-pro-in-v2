@@ -522,7 +522,7 @@ export default function EquipmentsPage() {
         {/* Filter Panel */}
         {showFilters && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Category */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
