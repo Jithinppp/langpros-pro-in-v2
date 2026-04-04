@@ -63,12 +63,18 @@ export default function Activities() {
 
   const tableOptions = [
     { value: "", label: "All Tables" },
-    ...Object.entries(TABLE_LABELS).map(([key, label]) => ({ value: key, label })),
+    ...Object.entries(TABLE_LABELS).map(([key, label]) => ({
+      value: key,
+      label,
+    })),
   ];
 
   const actionOptions = [
     { value: "", label: "All Actions" },
-    ...Object.entries(ACTION_LABELS).map(([key, { label }]) => ({ value: key, label })),
+    ...Object.entries(ACTION_LABELS).map(([key, { label }]) => ({
+      value: key,
+      label,
+    })),
   ];
 
   const { data, isLoading } = useQuery<ActivityResponse>({
@@ -120,21 +126,37 @@ export default function Activities() {
   };
 
   const formatAction = (action: string) => {
-    const act = ACTION_LABELS[action] || { label: action, color: "bg-gray-100 text-gray-700" };
+    const act = ACTION_LABELS[action] || {
+      label: action,
+      color: "bg-gray-100 text-gray-700",
+    };
     return (
-      <span className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${act.color}`}>
+      <span
+        className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${act.color}`}
+      >
         {act.label}
       </span>
     );
   };
 
-  const getEntityName = (record: Record<string, unknown> | null, tableName: string): string => {
+  const getEntityName = (
+    record: Record<string, unknown> | null,
+    tableName: string,
+  ): string => {
     if (!record) return "-";
 
     if (tableName === "assets") {
-      return (record.sku as string) || (record.name as string) || (record.id as string)?.slice(0, 8);
+      return (
+        (record.sku as string) ||
+        (record.name as string) ||
+        (record.id as string)?.slice(0, 8)
+      );
     }
-    if (tableName === "categories" || tableName === "subcategories" || tableName === "models") {
+    if (
+      tableName === "categories" ||
+      tableName === "subcategories" ||
+      tableName === "models"
+    ) {
       return (record.name as string) || (record.id as string)?.slice(0, 8);
     }
     if (tableName === "storage_locations") {
@@ -143,7 +165,11 @@ export default function Activities() {
     return (record.id as string)?.slice(0, 8) || "-";
   };
 
-  const getChanges = (newValues: Record<string, unknown> | null, oldValues: Record<string, unknown> | null, action: string) => {
+  const getChanges = (
+    newValues: Record<string, unknown> | null,
+    oldValues: Record<string, unknown> | null,
+    action: string,
+  ) => {
     if (action === "create") {
       return <span className="text-green-600">Created new record</span>;
     }
@@ -158,34 +184,34 @@ export default function Activities() {
 
     const changes: string[] = [];
     for (const key of Object.keys(newValues || {})) {
-      if (key === "id" || key === "created_at" || key === "updated_at") continue;
+      if (key === "id" || key === "created_at" || key === "updated_at")
+        continue;
       if ((newValues || {})[key] !== oldValues[key]) {
-        changes.push(`${key}: ${oldValues[key]} \u2192 ${(newValues || {})[key]}`);
+        changes.push(
+          `${key}: ${oldValues[key]} \u2192 ${(newValues || {})[key]}`,
+        );
       }
     }
-    return changes.length > 0 ? <span className="text-gray-600">{changes.join(", ")}</span> : <span className="text-gray-400">No changes</span>;
+    return changes.length > 0 ? (
+      <span className="text-gray-600">{changes.join(", ")}</span>
+    ) : (
+      <span className="text-gray-400">No changes</span>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans p-4 py-12">
-      <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div className="min-h-screen font-sans p-4 py-12">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden">
         <div className="p-6 md:p-10">
-
           <div className="mb-6">
-            <Link
-              to="/inventory-manager"
-              className="inline-flex items-center text-gray-500 hover:text-gray-700 text-sm mb-4"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back to Dashboard
-            </Link>
-            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight mb-2">Activities</h1>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              Activities
+            </h2>
             <p className="text-sm text-gray-500">
-              View all changes made to your inventory ({data?.totalCount || 0} records)
+              View all changes made to your inventory ({data?.totalCount || 0}{" "}
+              records)
             </p>
           </div>
-          <div className="h-px bg-gray-100 mb-6" />
-
           <div className="flex flex-wrap gap-3 mb-6">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
@@ -203,20 +229,26 @@ export default function Activities() {
             <div className="w-40">
               <SelectDropdown
                 value={tableFilter}
-                onChange={(val) => { setTableFilter(val); setPage(1); }}
+                onChange={(val) => {
+                  setTableFilter(val);
+                  setPage(1);
+                }}
                 options={tableOptions}
                 placeholder="All Tables"
-                size="xs"
+                size="md"
               />
             </div>
 
             <div className="w-36">
               <SelectDropdown
                 value={actionFilter}
-                onChange={(val) => { setActionFilter(val); setPage(1); }}
+                onChange={(val) => {
+                  setActionFilter(val);
+                  setPage(1);
+                }}
                 options={actionOptions}
                 placeholder="All Actions"
-                size="xs"
+                size="md"
               />
             </div>
           </div>
@@ -228,7 +260,9 @@ export default function Activities() {
           ) : data?.records.length === 0 ? (
             <div className="py-20 text-center">
               <p className="text-sm text-gray-300 mb-2">No activities found</p>
-              <p className="text-sm text-gray-400 mb-6">Activity logs will appear here as changes are made</p>
+              <p className="text-sm text-gray-400 mb-6">
+                Activity logs will appear here as changes are made
+              </p>
             </div>
           ) : (
             <>
@@ -255,7 +289,10 @@ export default function Activities() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {data?.records.map((record) => (
-                      <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={record.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-4 py-3 text-sm text-gray-500">
                           {formatTimestamp(record.created_at)}
                         </td>
@@ -263,13 +300,23 @@ export default function Activities() {
                           {formatAction(record.action)}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          {TABLE_LABELS[record.entity_type] || record.entity_type}
+                          {TABLE_LABELS[record.entity_type] ||
+                            record.entity_type}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-mono">
-                          {getEntityName(record.action === "delete" ? record.old_values : record.new_values, record.entity_type)}
+                          {getEntityName(
+                            record.action === "delete"
+                              ? record.old_values
+                              : record.new_values,
+                            record.entity_type,
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm max-w-xs truncate">
-                          {getChanges(record.new_values, record.old_values, record.action)}
+                          {getChanges(
+                            record.new_values,
+                            record.old_values,
+                            record.action,
+                          )}
                         </td>
                       </tr>
                     ))}

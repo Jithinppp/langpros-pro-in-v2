@@ -47,7 +47,7 @@ const Button = ({
     >
       {isLoading ? (
         <>
-          <Loading className="-ml-1 mr-2 h-4 w-4" />
+          <Loading className="-ml-1 mr-2 h-4 w-4" color="border-white" />
           Loading...
         </>
       ) : (

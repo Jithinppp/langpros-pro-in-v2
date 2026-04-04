@@ -405,15 +405,15 @@ export default function AddEquipment() {
   if (loadingCategories) {
     return (
       <div className="min-h-[100dvh] bg-[#FAFAFA] flex flex-col items-center justify-center">
-        <Loading className="w-10 h-10 text-slate-900 mb-4" />
-        <p className="text-sm text-slate-400">Loading configuration...</p>
+        <Loading className="w-10 h-10" color="border-slate-900" />
+        <p className="text-sm text-slate-400 mt-4">Loading configuration...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen font-sans p-4 py-12">
-      <div className="w-full mx-auto rounded-2xl overflow-hidden">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden  p-6 md:p-10">
         {successMessage && (
           <AlertBanner
             variant="success"
