@@ -14,8 +14,17 @@ interface EquipmentFormState {
   warrantyExpiry: string;
   hasWarranty: boolean;
   generatedSku: string;
+  shippingAddress: string;
+  trackingCode: string;
+  deliveryDate: string;
+  carrier: string;
 
   // UI state
+  supplierName: string;
+  invoiceNumber: string;
+  weight: string;
+  caseNumber: string;
+  remarks: string;
   isSubmitting: boolean;
   errors: Record<string, string>;
   submitError: string;
@@ -34,6 +43,15 @@ interface EquipmentFormState {
   setWarrantyExpiry: (date: string) => void;
   setHasWarranty: (has: boolean) => void;
   setGeneratedSku: (sku: string) => void;
+  setShippingAddress: (address: string) => void;
+  setTrackingCode: (code: string) => void;
+  setDeliveryDate: (date: string) => void;
+  setCarrier: (carrier: string) => void;
+  setSupplierName: (name: string) => void;
+  setInvoiceNumber: (num: string) => void;
+  setWeight: (weight: string) => void;
+  setCaseNumber: (caseNum: string) => void;
+  setRemarks: (remarks: string) => void;
   setIsSubmitting: (submitting: boolean) => void;
   setErrors: (errors: Record<string, string>) => void;
   setSubmitError: (error: string) => void;
@@ -54,6 +72,15 @@ const equipmentInitialState = {
   warrantyExpiry: "",
   hasWarranty: false,
   generatedSku: "",
+  shippingAddress: "",
+  trackingCode: "",
+  deliveryDate: "",
+  carrier: "",
+  supplierName: "",
+  invoiceNumber: "",
+  weight: "",
+  caseNumber: "",
+  remarks: "",
   isSubmitting: false,
   errors: {},
   submitError: "",
@@ -76,6 +103,15 @@ export const useEquipmentStore = create<EquipmentFormState>((set) => ({
   setWarrantyExpiry: (date) => set({ warrantyExpiry: date }),
   setHasWarranty: (has) => set({ hasWarranty: has }),
   setGeneratedSku: (sku) => set({ generatedSku: sku }),
+  setShippingAddress: (address) => set({ shippingAddress: address }),
+  setTrackingCode: (code) => set({ trackingCode: code }),
+  setDeliveryDate: (date) => set({ deliveryDate: date }),
+  setCarrier: (carrier) => set({ carrier }),
+  setSupplierName: (name) => set({ supplierName: name }),
+  setInvoiceNumber: (num) => set({ invoiceNumber: num }),
+  setWeight: (weight) => set({ weight }),
+  setCaseNumber: (caseNum) => set({ caseNumber: caseNum }),
+  setRemarks: (remarks) => set({ remarks }),
   setIsSubmitting: (submitting) => set({ isSubmitting: submitting }),
   setErrors: (errors) => set({ errors }),
   setSubmitError: (error) => set({ submitError: error }),

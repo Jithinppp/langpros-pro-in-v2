@@ -16,14 +16,14 @@ export const getStatusColor = (status?: string | null) => {
 
 export const getConditionColor = (condition?: string | null) => {
   switch (condition?.toLowerCase()) {
-    case "new":
-      return "text-[#1769ff]";
-    case "good":
+    case "excellent":
       return "text-[#00d26a]";
-    case "damaged":
-      return "text-red-500";
-    case "under_repair":
+    case "good":
+      return "text-[#1769ff]";
+    case "fair":
       return "text-[#ffbd2e]";
+    case "poor":
+      return "text-red-500";
     default:
       return "text-gray-600";
   }

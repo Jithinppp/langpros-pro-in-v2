@@ -1,6 +1,14 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { supabase } from "../../lib/supabase";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import Textarea from "../../components/Textarea";
+import ConfirmModal from "../../components/ConfirmModal";
 import {
   Listbox,
   ListboxButton,
@@ -8,22 +16,23 @@ import {
   ListboxOption,
   Transition,
 } from "@headlessui/react";
-import { supabase } from "../../lib/supabase";
-import Button from "../../components/Button";
-import Input from "../../components/Input";
-import ConfirmModal from "../../components/ConfirmModal";
-import { useSubcategoryStore } from "../../store/subcategoryStore";
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
 import {
   ChevronLeft,
   Trash2,
   Folder,
   Pencil,
   Save,
-  ChevronDown,
-  Check,
-  ChevronRight,
   ChevronFirst,
   ChevronLast,
+  ChevronRight,
+  Check,
+  ChevronDown,
+  AlertCircle,
 } from "lucide-react";
 
 interface Subcategory {
@@ -33,10 +42,7 @@ interface Subcategory {
   category_id: string;
   description: string | null;
   created_at: string;
-  categories?: {
-    name: string;
-    code: string;
-  };
+  categories?: { name: string; code: string };
 }
 
 interface Category {
@@ -45,49 +51,39 @@ interface Category {
   code: string;
 }
 
+const subcategorySchema = z.object({
+  name: z.string().nonempty("Subcategory name is required"),
+  code: z.string().nonempty("Subcategory code is required"),
+  category_id: z.string().nonempty("Please select a category"),
+  description: z.string().optional(),
+});
+
+type SubcategoryFormValues = z.infer<typeof subcategorySchema>;
+
 export default function ManageSubcategories() {
   const queryClient = useQueryClient();
-  const store = useSubcategoryStore();
-
-  const {
-    selectedCategoryId,
-    formName,
-    formCode,
-    formDescription,
-    formErrors,
-    formIsSubmitting,
-    formSubmitError,
-    editingId,
-    editName,
-    editCode,
-    editCategoryId,
-    editDescription,
-    editErrors,
-    isEditing,
-    setSelectedCategoryId,
-    setFormName,
-    setFormCode,
-    setFormDescription,
-    setFormErrors,
-    setFormIsSubmitting,
-    setFormSubmitError,
-    setEditingId,
-    setEditName,
-    setEditCode,
-    setEditCategoryId,
-    setEditDescription,
-    setEditErrors,
-    setIsEditing,
-  } = store;
-
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [subcategoryToDelete, setSubcategoryToDelete] =
     useState<Subcategory | null>(null);
-  const [successMessage, setSuccessMessage] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Add form
+  const addForm = useForm<SubcategoryFormValues>({
+    resolver: zodResolver(subcategorySchema),
+    defaultValues: { name: "", code: "", category_id: "", description: "" },
+  });
+
+  // Edit form
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const editForm = useForm<SubcategoryFormValues>({
+    resolver: zodResolver(subcategorySchema),
+    defaultValues: { name: "", code: "", category_id: "", description: "" },
+  });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -120,9 +116,18 @@ export default function ManageSubcategories() {
     staleTime: 30000,
   });
 
+  const addSubcategoryOptions: SelectOption[] = categories.map((c) => ({
+    value: c.id,
+    label: `${c.name} (${c.code})`,
+  }));
+  const editCategoryOptions: SelectOption[] = categories.map((c) => ({
+    value: c.id,
+    label: `${c.name} (${c.code})`,
+  }));
   const handleCategoryChange = (id: string) => {
     setSelectedCategoryId(id);
     setCurrentPage(1);
+    addForm.setValue("category_id", id);
   };
 
   const totalPages = Math.ceil(subcategories.length / itemsPerPage);
@@ -130,10 +135,6 @@ export default function ManageSubcategories() {
     const start = (currentPage - 1) * itemsPerPage;
     return subcategories.slice(start, start + itemsPerPage);
   }, [subcategories, currentPage, itemsPerPage]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
 
   const addMutation = useMutation({
     mutationFn: async (data: {
@@ -147,18 +148,32 @@ export default function ManageSubcategories() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
+      queryClient.invalidateQueries({ queryKey: ["models"] });
+      queryClient.invalidateQueries({ queryKey: ["assets-stats"] });
       setSuccessMessage("Subcategory added successfully!");
-      resetAddForm();
+      addForm.reset({
+        name: "",
+        code: "",
+        category_id: selectedCategoryId,
+        description: "",
+      });
       setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (err: Error) => {
-      setFormSubmitError(err.message || "Failed to add subcategory");
-      setFormIsSubmitting(false);
+      addForm.setError("root", {
+        message: err.message || "Failed to add subcategory",
+      });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: {
+    mutationFn: async ({
+      id,
+      name,
+      code,
+      category_id,
+      description,
+    }: {
       id: string;
       name: string;
       code: string;
@@ -167,23 +182,20 @@ export default function ManageSubcategories() {
     }) => {
       const { error } = await supabase
         .from("subcategories")
-        .update({
-          name: data.name,
-          code: data.code,
-          category_id: data.category_id,
-          description: data.description,
-        })
-        .eq("id", data.id);
+        .update({ name, code, category_id, description })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
+      queryClient.invalidateQueries({ queryKey: ["models"] });
+      queryClient.invalidateQueries({ queryKey: ["assets-stats"] });
       setEditingId(null);
-      setIsEditing(false);
     },
     onError: (err: Error) => {
-      setFormSubmitError(err.message || "Failed to update subcategory");
-      setIsEditing(false);
+      editForm.setError("root", {
+        message: err.message || "Failed to update subcategory",
+      });
     },
   });
 
@@ -196,74 +208,29 @@ export default function ManageSubcategories() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
-      setDeleteId(null);
+      queryClient.invalidateQueries({ queryKey: ["models"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets_paginated"] });
+      queryClient.invalidateQueries({ queryKey: ["archived-subcategories"] });
+      queryClient.invalidateQueries({
+        queryKey: ["archived-subcategories-count"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["assets-stats"] });
     },
     onError: (err: Error) => {
       setDeleteError(err.message || "Failed to delete subcategory");
-      setDeleteId(null);
+      setShowDeleteModal(false);
     },
   });
 
-  const resetAddForm = () => {
-    setFormName("");
-    setFormCode("");
-    setFormDescription("");
-    setSelectedCategoryId("");
-    setFormErrors({});
-    setFormSubmitError("");
-    setFormIsSubmitting(false);
-  };
-
-  const validateAdd = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formName.trim()) newErrors.name = "Subcategory name is required";
-    if (!formCode.trim()) newErrors.code = "Subcategory code is required";
-    if (!selectedCategoryId) newErrors.categoryId = "Please select a category";
-    setFormErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateEdit = () => {
-    const newErrors: Record<string, string> = {};
-    if (!editName.trim()) newErrors.name = "Subcategory name is required";
-    if (!editCode.trim()) newErrors.code = "Subcategory code is required";
-    if (!editCategoryId) newErrors.categoryId = "Please select a category";
-    setEditErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormSubmitError("");
-    if (!validateAdd()) return;
-    setFormIsSubmitting(true);
-    addMutation.mutate({
-      name: formName.trim(),
-      code: formCode.trim().toUpperCase(),
-      category_id: selectedCategoryId,
-      description: formDescription.trim(),
-    });
-  };
-
   const handleEdit = (subcategory: Subcategory) => {
     setEditingId(subcategory.id);
-    setEditName(subcategory.name);
-    setEditCode(subcategory.code);
     setEditCategoryId(subcategory.category_id);
-    setEditDescription(subcategory.description || "");
-    setEditErrors({});
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingId || !validateEdit()) return;
-    setIsEditing(true);
-    updateMutation.mutate({
-      id: editingId,
-      name: editName.trim(),
-      code: editCode.trim().toUpperCase(),
-      category_id: editCategoryId,
-      description: editDescription.trim(),
+    editForm.reset({
+      name: subcategory.name,
+      code: subcategory.code,
+      category_id: subcategory.category_id,
+      description: subcategory.description || "",
     });
   };
 
@@ -274,8 +241,6 @@ export default function ManageSubcategories() {
 
   const confirmDelete = () => {
     if (subcategoryToDelete) {
-      setDeleteId(subcategoryToDelete.id);
-      setDeleteError("");
       deleteMutation.mutate(subcategoryToDelete.id);
       setShowDeleteModal(false);
       setSubcategoryToDelete(null);
@@ -283,174 +248,167 @@ export default function ManageSubcategories() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
+    <div className="min-h-[100dvh] bg-[#FAFAFA] font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
+      <div className="max-w-3xl mx-auto px-4">
         <Link
-          to="/inventory-manager/add-equipment"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
+          to="/inventory-manager"
+          className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors mb-8 uppercase tracking-[0.1em]"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back to Add Equipment
+          Back to Dashboard
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Manage Subcategories
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Add, edit, and delete subcategories from your inventory
-          </p>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Add New Subcategory
-            </h2>
-          </div>
-
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-600">{successMessage}</p>
-            </div>
-          )}
-
-          {formSubmitError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{formSubmitError}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleAdd} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Category <span className="text-red-500">*</span>
-              </label>
-              <Listbox
-                value={selectedCategoryId}
-                onChange={handleCategoryChange}
-              >
-                <div className="relative">
-                  <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2.5 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
-                    <span
-                      className={
-                        selectedCategoryId ? "text-gray-900" : "text-gray-400"
-                      }
-                    >
-                      {selectedCategoryId
-                        ? categories.find((c) => c.id === selectedCategoryId)
-                            ?.name +
-                          " (" +
-                          categories.find((c) => c.id === selectedCategoryId)
-                            ?.code +
-                          ")"
-                        : "Select a category"}
-                    </span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </span>
-                  </ListboxButton>
-                  <Transition
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      {categories.map((cat) => (
-                        <ListboxOption
-                          key={cat.id}
-                          value={cat.id}
-                          className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                              active
-                                ? "bg-blue-50 text-[#1769ff]"
-                                : "text-gray-900"
-                            }`
-                          }
-                        >
-                          {({ selected }) => (
-                            <>
-                              <span
-                                className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                              >
-                                {cat.name} ({cat.code})
-                              </span>
-                              {selected && (
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                  <Check className="h-5 w-5" />
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </ListboxOption>
-                      ))}
-                    </ListboxOptions>
-                  </Transition>
-                </div>
-              </Listbox>
-              {formErrors.categoryId && (
-                <p className="mt-1.5 text-sm text-red-500">
-                  {formErrors.categoryId}
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Subcategory Name"
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                error={formErrors.name}
-                placeholder="e.g., Gaming Laptops"
-                required
-              />
-              <Input
-                label="Subcategory Code"
-                type="text"
-                value={formCode}
-                onChange={(e) =>
-                  setFormCode(
-                    e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""),
-                  )
-                }
-                error={formErrors.code}
-                placeholder="e.g., GAM-LAP"
-                required
-                maxLength={10}
-                helperText="No spaces or special characters. Example: GAM-LAP"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Description <span className="text-gray-400">(Optional)</span>
-              </label>
-              <textarea
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Enter subcategory description"
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={formIsSubmitting}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {formIsSubmitting ? "Saving..." : "Save Subcategory"}
-              </Button>
-            </div>
-          </form>
-        </div>
-
-        {deleteError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{deleteError}</p>
+        {successMessage && (
+          <div className="bg-emerald-50/80 border border-emerald-200/50 text-emerald-700 px-5 py-4 rounded-[1.25rem] mb-8 flex items-center gap-3">
+            <Check className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{successMessage}</span>
           </div>
         )}
 
+        {addForm.formState.errors.root && (
+          <div className="bg-red-50/80 border border-red-200/50 text-red-700 px-5 py-4 rounded-[1.25rem] mb-8 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">
+              {addForm.formState.errors.root.message}
+            </span>
+          </div>
+        )}
+
+        <div className="mb-10">
+          <h2 className="text-3xl font-semibold text-slate-900 tracking-tight">
+            Manage Subcategories
+          </h2>
+          <p className="text-slate-500 mt-2 text-sm">
+            Add, edit, and manage subcategories for your inventory.
+          </p>
+        </div>
+
+        {/* Add Form Card */}
+        <div className="bg-white border border-slate-200/60 rounded-[2rem] overflow-hidden mb-8 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.04)]">
+          <div className="p-8">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+              Add New Subcategory
+            </h3>
+
+            <form
+              onSubmit={addForm.handleSubmit((data) =>
+                addMutation.mutate({
+                  name: data.name.trim(),
+                  code: data.code.trim().toUpperCase(),
+                  category_id: data.category_id,
+                  description: data.description?.trim() || "",
+                }),
+              )}
+              className="space-y-6"
+            >
+              <div>
+                <label className="block text-xs font-medium text-slate-500 uppercase tracking-[0.1em] mb-3">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <Listbox
+                  value={addForm.watch("category_id")}
+                  onChange={handleCategoryChange}
+                >
+                  <div className="relative">
+                    <ListboxButton className="relative w-full rounded-[1.25rem] bg-white py-4 pl-5 pr-14 text-left border border-slate-200/60 focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-400 disabled:bg-slate-50 transition-all text-sm shadow-[0_2px_12px_-4px_rgba(0,0,0,0.03)]">
+                      <span
+                        className={
+                          addForm.watch("category_id")
+                            ? "text-slate-900"
+                            : "text-slate-400"
+                        }
+                      >
+                        {addForm.watch("category_id")
+                          ? addSubcategoryOptions.find(
+                              (o) => o.value === addForm.watch("category_id"),
+                            )?.label
+                          : "Select a category"}
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-5">
+                        <ChevronDown className="h-4 w-4 text-slate-400" />
+                      </span>
+                    </ListboxButton>
+                    <Transition
+                      leave="transition ease-in duration-100"
+                      leaveFrom="opacity-100"
+                      leaveTo="opacity-0"
+                    >
+                      <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-[1.25rem] bg-white py-2 border border-slate-200/60 focus:outline-none text-sm shadow-[0_8px_30px_-10px_rgba(0,0,0,0.15)]">
+                        {addSubcategoryOptions.map((opt) => (
+                          <ListboxOption
+                            key={opt.value}
+                            value={opt.value}
+                            className={({ active }) =>
+                              `relative cursor-default select-none py-3 pl-12 pr-5 transition-colors ${
+                                active ? "bg-slate-50 text-slate-900" : "text-slate-600"
+                              }`
+                            }
+                          >
+                            {({ selected }) => (
+                              <>
+                                <span
+                                  className={`block truncate ${selected ? "font-medium text-slate-900" : "font-normal"}`}
+                                >
+                                  {opt.label}
+                                </span>
+                                {selected && (
+                                  <span className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-900">
+                                    <Check className="h-4 w-4" />
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </ListboxOption>
+                        ))}
+                      </ListboxOptions>
+                    </Transition>
+                  </div>
+                </Listbox>
+                {addForm.formState.errors.category_id && (
+                  <p className="text-xs font-medium text-red-500 mt-2 ml-1">
+                    {addForm.formState.errors.category_id.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Input
+                  label="Subcategory Name"
+                  type="text"
+                  placeholder="e.g., Laptops"
+                  {...addForm.register("name")}
+                  error={addForm.formState.errors.name?.message}
+                />
+                <Input
+                  label="Subcategory Code"
+                  type="text"
+                  placeholder="e.g., LAPTOP"
+                  maxLength={10}
+                  {...addForm.register("code")}
+                  error={addForm.formState.errors.code?.message}
+                />
+              </div>
+
+              <Textarea
+                label="Description"
+                {...addForm.register("description")}
+                placeholder="Enter subcategory description (optional)"
+                rows={3}
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={addMutation.isPending}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {addMutation.isPending ? "Saving..." : "Save Subcategory"}
+              </Button>
+            </form>
+          </div>
+        </div>
+
+        {/* Delete Modal */}
         <ConfirmModal
           isOpen={showDeleteModal}
           title="Delete Subcategory"
@@ -465,83 +423,114 @@ export default function ManageSubcategories() {
           variant="danger"
         />
 
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {/* List Card */}
+        <div className="bg-white border border-slate-200/60 rounded-[2rem] overflow-hidden shadow-[0_2px_20px_-8px_rgba(0,0,0,0.04)]">
+          <div className="p-8 pb-0">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+              Subcategories
+            </h3>
+          </div>
+
+          {deleteError && (
+            <div className="bg-red-50/80 border border-red-200/50 text-red-700 px-8 py-4 mb-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{deleteError}</span>
+            </div>
+          )}
+
           {!selectedCategoryId ? (
-            <div className="p-8 text-center text-gray-500">
-              <Folder className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>Select a category to see its subcategories</p>
+            <div className="p-12 text-center">
+              <div className="w-14 h-14 rounded-[1.5rem] bg-slate-100 flex items-center justify-center mx-auto mb-5">
+                <Folder className="w-7 h-7 text-slate-300" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">Select a category to see its subcategories</p>
             </div>
           ) : isLoading ? (
-            <div className="p-8 text-center text-gray-500">
-              Loading subcategories...
+            <div className="p-12 text-center">
+              <p className="text-sm text-slate-400">Loading subcategories...</p>
             </div>
           ) : subcategories.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Folder className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No subcategories found for this category.</p>
+            <div className="p-12 text-center">
+              <div className="w-14 h-14 rounded-[1.5rem] bg-slate-100 flex items-center justify-center mx-auto mb-5">
+                <Folder className="w-7 h-7 text-slate-300" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">No subcategories found for this category.</p>
             </div>
           ) : (
             <>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-slate-100">
                 {paginatedSubcategories.map((subcategory) => (
                   <div
                     key={subcategory.id}
-                    className="p-4 hover:bg-gray-50 transition-colors"
+                    className="px-8 py-5 hover:bg-slate-50/50 transition-colors"
                   >
                     {editingId === subcategory.id ? (
-                      <form onSubmit={handleUpdate} className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <form
+                        onSubmit={editForm.handleSubmit((data) =>
+                          updateMutation.mutate({
+                            id: subcategory.id,
+                            name: data.name.trim(),
+                            code: data.code.trim().toUpperCase(),
+                            category_id: editCategoryId || data.category_id,
+                            description: data.description?.trim() || "",
+                          }),
+                        )}
+                        className="space-y-6"
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <Input
+                            label="Name"
                             type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            error={editErrors.name}
                             placeholder="Name"
-                            className="mb-0"
+                            {...editForm.register("name")}
+                            error={editForm.formState.errors.name?.message}
                           />
                           <Input
+                            label="Code"
                             type="text"
-                            value={editCode}
-                            onChange={(e) =>
-                              setEditCode(
-                                e.target.value
-                                  .toUpperCase()
-                                  .replace(/[^A-Z0-9-]/g, ""),
-                              )
-                            }
-                            error={editErrors.code}
                             placeholder="Code"
-                            className="mb-0"
-                            helperText="e.g., GAM-LAP"
+                            maxLength={10}
+                            {...editForm.register("code")}
+                            error={editForm.formState.errors.code?.message}
                           />
                         </div>
                         <div>
+                          <label className="block text-xs font-medium text-slate-500 uppercase tracking-[0.1em] mb-3">
+                            Parent Category
+                          </label>
                           <Listbox
-                            value={editCategoryId}
-                            onChange={setEditCategoryId}
+                            value={
+                              editCategoryId ||
+                              editForm.watch("category_id") ||
+                              ""
+                            }
+                            onChange={(val) => {
+                              setEditCategoryId(val);
+                              editForm.setValue("category_id", val);
+                            }}
                           >
                             <div className="relative">
-                              <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
+                              <ListboxButton className="relative w-full rounded-[1.25rem] bg-white py-4 pl-5 pr-14 text-left border border-slate-200/60 focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-400 disabled:bg-slate-50 transition-all text-sm shadow-[0_2px_12px_-4px_rgba(0,0,0,0.03)]">
                                 <span
                                   className={
-                                    editCategoryId
-                                      ? "text-gray-900"
-                                      : "text-gray-400"
+                                    editCategoryId ||
+                                    editForm.watch("category_id")
+                                      ? "text-slate-900"
+                                      : "text-slate-400"
                                   }
                                 >
-                                  {editCategoryId
-                                    ? categories.find(
-                                        (c) => c.id === editCategoryId,
-                                      )?.name +
-                                      " (" +
-                                      categories.find(
-                                        (c) => c.id === editCategoryId,
-                                      )?.code +
-                                      ")"
+                                  {editCategoryId ||
+                                  editForm.watch("category_id")
+                                    ? editCategoryOptions.find(
+                                        (o) =>
+                                          o.value ===
+                                          (editCategoryId ||
+                                            editForm.watch("category_id")),
+                                      )?.label
                                     : "Select a category"}
                                 </span>
-                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-5">
+                                  <ChevronDown className="h-4 w-4 text-slate-400" />
                                 </span>
                               </ListboxButton>
                               <Transition
@@ -549,29 +538,27 @@ export default function ManageSubcategories() {
                                 leaveFrom="opacity-100"
                                 leaveTo="opacity-0"
                               >
-                                <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                                  {categories.map((cat) => (
+                                <ListboxOptions className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-[1.25rem] bg-white py-2 border border-slate-200/60 text-sm shadow-[0_8px_30px_-10px_rgba(0,0,0,0.15)]">
+                                  {editCategoryOptions.map((opt) => (
                                     <ListboxOption
-                                      key={cat.id}
-                                      value={cat.id}
+                                      key={opt.value}
+                                      value={opt.value}
                                       className={({ active }) =>
-                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                          active
-                                            ? "bg-blue-50 text-[#1769ff]"
-                                            : "text-gray-900"
+                                        `relative cursor-default select-none py-3 pl-12 pr-5 transition-colors ${
+                                          active ? "bg-slate-50 text-slate-900" : "text-slate-600"
                                         }`
                                       }
                                     >
                                       {({ selected }) => (
                                         <>
                                           <span
-                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                            className={`block truncate ${selected ? "font-medium text-slate-900" : "font-normal"}`}
                                           >
-                                            {cat.name} ({cat.code})
+                                            {opt.label}
                                           </span>
                                           {selected && (
-                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                              <Check className="h-5 w-5" />
+                                            <span className="absolute inset-y-0 left-0 flex items-center pl-5 text-slate-900">
+                                              <Check className="h-4 w-4" />
                                             </span>
                                           )}
                                         </>
@@ -582,56 +569,39 @@ export default function ManageSubcategories() {
                               </Transition>
                             </div>
                           </Listbox>
-                          {editErrors.categoryId && (
-                            <p className="mt-1.5 text-sm text-red-500">
-                              {editErrors.categoryId}
-                            </p>
-                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="submit"
-                            variant="primary"
-                            size="sm"
-                            disabled={isEditing}
-                          >
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
+                        <Textarea
+                          label="Description"
+                          {...editForm.register("description")}
+                          placeholder="Description (optional)"
+                          rows={3}
+                        />
+                        <div className="flex items-center gap-3">
+                          <Button type="submit" variant="primary" size="sm" disabled={updateMutation.isPending}>
+                            <Save className="w-4 h-4 mr-1" /> {updateMutation.isPending ? "Saving..." : "Save"}
                           </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setEditingId(null)}
-                          >
-                            Cancel
-                          </Button>
+                          <Button type="button" variant="secondary" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
                         </div>
                       </form>
                     ) : (
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-lg font-medium text-gray-900">
-                              {subcategory.name}
-                            </span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                              {subcategory.code}
-                            </span>
-                            {subcategory.categories && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
-                                {subcategory.categories.name} (
-                                {subcategory.categories.code})
-                              </span>
-                            )}
+                          <div className="flex items-center gap-3">
+                            <span className="text-base font-semibold text-slate-900">{subcategory.name}</span>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">{subcategory.code}</span>
                           </div>
+                          {subcategory.categories && (
+                            <p className="text-xs text-slate-500 mt-2">
+                              {subcategory.categories.name} ({subcategory.categories.code})
+                            </p>
+                          )}
                           {subcategory.description && (
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm text-slate-500 mt-1">
                               {subcategory.description}
                             </p>
                           )}
-                          <p className="text-xs text-gray-400 mt-1">
-                            Created:{" "}
+                          <p className="text-xs text-slate-400 mt-2">
+                            Created: {" "}
                             {new Date(
                               subcategory.created_at,
                             ).toLocaleDateString()}
@@ -640,18 +610,18 @@ export default function ManageSubcategories() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleEdit(subcategory)}
-                            className="p-2 text-gray-400 hover:text-[#1769ff] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
                             title="Edit subcategory"
                           >
-                            <Pencil className="w-5 h-5" />
+                            <Pencil className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(subcategory)}
-                            disabled={deleteId === subcategory.id}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            disabled={deleteMutation.isPending}
+                            className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
                             title="Delete subcategory"
                           >
-                            <Trash2 className="w-5 h-5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -660,45 +630,40 @@ export default function ManageSubcategories() {
                 ))}
               </div>
               {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-                  <div className="text-sm text-gray-500">
+                <div className="flex items-center justify-between px-8 py-5 border-t border-slate-100">
+                  <div className="text-xs text-slate-400">
                     Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                    {Math.min(currentPage * itemsPerPage, subcategories.length)}{" "}
-                    of {subcategories.length} subcategories
+                    {Math.min(currentPage * itemsPerPage, subcategories.length)} of {subcategories.length}
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handlePageChange(1)}
+                      onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="First page"
+                      className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
                     >
                       <ChevronFirst className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handlePageChange(currentPage - 1)}
+                      onClick={() => setCurrentPage((p) => p - 1)}
                       disabled={currentPage === 1}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Previous page"
+                      className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="px-3 py-1 text-sm text-gray-700">
-                      Page {currentPage} of {totalPages}
+                    <span className="px-4 py-2 text-xs text-slate-600 font-medium">
+                      {currentPage} / {totalPages}
                     </span>
                     <button
-                      onClick={() => handlePageChange(currentPage + 1)}
+                      onClick={() => setCurrentPage((p) => p + 1)}
                       disabled={currentPage === totalPages}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Next page"
+                      className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handlePageChange(totalPages)}
+                      onClick={() => setCurrentPage(totalPages)}
                       disabled={currentPage === totalPages}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Last page"
+                      className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
                     >
                       <ChevronLast className="w-4 h-4" />
                     </button>

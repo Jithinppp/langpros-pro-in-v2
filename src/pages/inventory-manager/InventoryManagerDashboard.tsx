@@ -9,12 +9,122 @@ import {
   List,
   Plus,
   Activity,
+  Import,
+  BarChart3,
+  FolderOpen,
+  ArrowUpRight,
 } from "lucide-react";
 
 interface Stats {
   total: number;
   damaged: number;
   available: number;
+}
+
+function StatsCard({
+  label,
+  value,
+  badge,
+  variant = "default",
+  delay = 0,
+}: {
+  label: string;
+  value: number;
+  badge?: { text: string; color: string };
+  variant?: "default" | "success" | "warning";
+  delay?: number;
+}) {
+  return (
+    <div
+      className="group relative overflow-hidden bg-white border border-slate-200/50 rounded-[2rem] p-8 shadow-[0_2px_24px_-8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1"
+      style={{
+        animationDelay: `${delay}ms`,
+        transition:
+          "transform 0.7s cubic-bezier(0.32,0.72,0,1), box-shadow 0.7s cubic-bezier(0.32,0.72,0,1)",
+      }}
+    >
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-slate-50/80 via-transparent to-white/40 opacity-0 group-hover:opacity-100"
+        style={{ transition: "opacity 0.7s cubic-bezier(0.32,0.72,0,1)" }}
+      />
+
+      <div className="relative z-10">
+        <div className="flex items-baseline gap-3">
+          <span className="text-5xl md:text-6xl font-semibold tracking-tight text-slate-900 font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
+            {value}
+          </span>
+          {badge && (
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.12em] font-medium ${badge.color}`}
+            >
+              {variant === "success" && <CheckCircle className="w-3 h-3" />}
+              {variant === "warning" && <ShieldAlert className="w-3 h-3" />}
+              {badge.text}
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-slate-500 mt-5 uppercase tracking-[0.15em] font-medium">
+          {label}
+        </p>
+      </div>
+
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent opacity-0 group-hover:opacity-100"
+        style={{ transition: "opacity 0.7s" }}
+      />
+    </div>
+  );
+}
+
+function ActionCard({
+  action,
+  delay = 0,
+}: {
+  action: { to: string; icon: React.ReactNode; label: string; desc: string };
+  delay?: number;
+}) {
+  return (
+    <Link
+      to={action.to}
+      className="group block relative overflow-hidden bg-white border border-slate-200/50 rounded-[2rem] p-6 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_32px_-10px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:scale-[0.98]"
+      style={{
+        animationDelay: `${delay}ms`,
+        transition:
+          "transform 0.5s cubic-bezier(0.32,0.72,0,1), box-shadow 0.5s cubic-bezier(0.32,0.72,0,1)",
+      }}
+    >
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-slate-50/60 via-transparent to-white/50 opacity-0 group-hover:opacity-100"
+        style={{ transition: "opacity 0.5s cubic-bezier(0.32,0.72,0,1)" }}
+      />
+
+      <div className="relative z-10 flex items-start justify-between">
+        <div className="flex flex-col gap-4">
+          <div
+            className="w-11 h-11 rounded-[1.25rem] bg-slate-100/60 border border-slate-200/40 flex items-center justify-center text-slate-500 group-hover:text-slate-900 group-hover:bg-white group-hover:border-slate-300/50"
+            style={{ transition: "all 0.4s cubic-bezier(0.32,0.72,0,1)" }}
+          >
+            {action.icon}
+          </div>
+          <div>
+            <span className="text-sm font-medium text-slate-900 block group-hover:text-black">
+              {action.label}
+            </span>
+            <span className="text-xs text-slate-500 mt-1 block group-hover:text-slate-600">
+              {action.desc}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="w-8 h-8 rounded-full bg-slate-100/60 border border-slate-200/40 flex items-center justify-center text-slate-400 group-hover:text-slate-700 group-hover:bg-white group-hover:border-slate-300/50 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          style={{ transition: "all 0.4s cubic-bezier(0.32,0.72,0,1)" }}
+        >
+          <ArrowUpRight className="w-4 h-4" />
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 export default function InventoryManagerDashboard() {
@@ -48,121 +158,199 @@ export default function InventoryManagerDashboard() {
     staleTime: 60000,
   });
 
-  const renderStat = (value: number | undefined) => {
-    if (isLoading) {
-      return <span className="text-sm text-gray-400">loading...</span>;
-    }
-    return value ?? 0;
-  };
-
   const roleTitle = user?.email?.split("@")[0] || "Manager";
 
+  const actions = [
+    {
+      to: "/inventory-manager/add-equipment",
+      icon: <Plus className="w-5 h-5" />,
+      label: "Add Equipment",
+      desc: "Register new equipment",
+    },
+    {
+      to: "/inventory-manager/import-equipment",
+      icon: <Import className="w-5 h-5" />,
+      label: "Import",
+      desc: "Bulk import via CSV",
+    },
+    {
+      to: "/inventory-manager/equipments",
+      icon: <List className="w-5 h-5" />,
+      label: "All Equipment",
+      desc: "Browse catalog",
+    },
+    {
+      to: "/inventory-manager/archive",
+      icon: <ArchiveIcon className="w-5 h-5" />,
+      label: "Archive",
+      desc: "View restored items",
+    },
+    {
+      to: "/inventory-manager/activities",
+      icon: <Activity className="w-5 h-5" />,
+      label: "Activity Log",
+      desc: "Recent changes",
+    },
+    {
+      to: "/inventory-manager/reports",
+      icon: <BarChart3 className="w-5 h-5" />,
+      label: "Reports",
+      desc: "Analytics & exports",
+    },
+    {
+      to: "/inventory-manager/manage-categories",
+      icon: <FolderOpen className="w-5 h-5" />,
+      label: "Categories",
+      desc: "Manage structure",
+    },
+  ];
+
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-6xl mx-auto sm:px-2 py-12">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {roleTitle}
-          </h1>
-          <p className="text-gray-500 mt-1">Track and manage your inventory</p>
-        </div>
+    <div className="min-h-[100dvh] bg-[#FAFAFA] font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
+      {/* Noise overlay - fixed */}
 
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="border border-gray-100 rounded-lg p-6 hover:border-gray-200 transition-all">
-            <div className="w-12 h-12 bg-[#00d26a]/10 rounded-lg flex items-center justify-center mb-4">
-              <ArchiveIcon className="w-6 h-6 text-[#00d26a]" />
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:px-8 md:py-16 lg:py-20">
+        {/* Header */}
+        <header className="mb-12 md:mb-16">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 border border-slate-200/50 mb-6">
+                <span className="text-[10px] text-slate-500 uppercase tracking-[0.15em] font-medium">
+                  Dashboard
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-slate-900 tracking-tight leading-[1.05]">
+                Hi {roleTitle} manager 👋
+              </h1>
+              <p className="text-sm text-slate-500 mt-4 max-w-md font-normal">
+                Track and manage your inventory
+              </p>
             </div>
-            <p className="text-4xl font-bold text-gray-900">
-              {renderStat(stats?.total)}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">Total Items</p>
           </div>
-          <div className="border border-gray-100 rounded-lg p-6 hover:border-gray-200 transition-all">
-            <div className="w-12 h-12 bg-[#ffbd2e]/10 rounded-lg flex items-center justify-center mb-4">
-              <ShieldAlert className="w-6 h-6 text-[#ffbd2e]" />
+        </header>
+
+        {/* Stats Row - Asymmetric Bento */}
+        {!isLoading && stats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16">
+            <div
+              className="animate-fade-up"
+              style={{
+                animationFillMode: "both",
+                animationDelay: "0ms",
+                animationDuration: "800ms",
+              }}
+            >
+              <StatsCard label="Total Assets" value={stats.total} delay={0} />
             </div>
-            <p className="text-4xl font-bold text-gray-900">
-              {renderStat(stats?.damaged)}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">Damaged Items</p>
+            <div
+              className="animate-fade-up"
+              style={{
+                animationFillMode: "both",
+                animationDelay: "100ms",
+                animationDuration: "800ms",
+              }}
+            >
+              <StatsCard
+                label="Available"
+                value={stats.available}
+                badge={{
+                  text: "Active",
+                  color:
+                    "bg-emerald-50 text-emerald-700 border border-emerald-200/50",
+                }}
+                variant="success"
+                delay={100}
+              />
+            </div>
+            <div
+              className="animate-fade-up"
+              style={{
+                animationFillMode: "both",
+                animationDelay: "200ms",
+                animationDuration: "800ms",
+              }}
+            >
+              <StatsCard
+                label="Damaged / Maintenance"
+                value={stats.damaged}
+                badge={{
+                  text: "Review",
+                  color:
+                    "bg-amber-50 text-amber-700 border border-amber-200/50",
+                }}
+                variant="warning"
+                delay={200}
+              />
+            </div>
           </div>
-          <div className="border border-gray-100 rounded-lg p-6 hover:border-gray-200 transition-all">
-            <div className="w-12 h-12 bg-[#1769ff]/10 rounded-lg flex items-center justify-center mb-4">
-              <CheckCircle className="w-6 h-6 text-[#1769ff]" />
-            </div>
-            <p className="text-4xl font-bold text-gray-900">
-              {renderStat(stats?.available)}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">Available Items</p>
+        )}
+
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white border border-slate-200/50 rounded-[2rem] p-8 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.03)]"
+              >
+                <div className="w-24 h-14 bg-slate-100 rounded animate-pulse" />
+                <div className="w-32 h-3 bg-slate-100 rounded mt-6 animate-pulse" />
+              </div>
+            ))}
           </div>
-        </div>
+        )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link
-            to="/inventory-manager/add-equipment"
-            className="flex items-center gap-4 p-6 border border-gray-100 rounded-lg hover:border-[#1769ff] hover:bg-[#1769ff]/5 transition-all group"
-          >
-            <div className="w-12 h-12 bg-[#1769ff]/10 rounded-lg flex items-center justify-center group-hover:bg-[#1769ff] transition-all">
-              <Plus className="w-6 h-6 text-[#1769ff] group-hover:text-white transition-all" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Add New Equipment</h3>
-              <p className="text-sm text-gray-500">
-                Register new equipment to your inventory
-              </p>
-            </div>
-          </Link>
+        {/* Actions Section */}
+        <section>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-px h-4 bg-slate-200" />
+            <p className="text-[11px] text-slate-400 uppercase tracking-[0.15em] font-medium">
+              Quick Actions
+            </p>
+          </div>
 
-          <Link
-            to="/inventory-manager/equipments"
-            className="flex items-center gap-4 p-6 border border-gray-100 rounded-lg hover:border-[#1769ff] hover:bg-[#1769ff]/5 transition-all group"
-          >
-            <div className="w-12 h-12 bg-[#1769ff]/10 rounded-lg flex items-center justify-center group-hover:bg-[#1769ff] transition-all">
-              <List className="w-6 h-6 text-[#1769ff] group-hover:text-white transition-all" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">
-                View All Equipment
-              </h3>
-              <p className="text-sm text-gray-500">
-                Browse and manage your equipment catalog
-              </p>
-            </div>
-          </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {actions.map((action, index) => (
+              <div
+                key={action.to}
+                className="animate-fade-up"
+                style={{
+                  animationFillMode: "both",
+                  animationDelay: `${(index + 3) * 80}ms`,
+                  animationDuration: "800ms",
+                }}
+              >
+                <ActionCard action={action} delay={(index + 3) * 80} />
+              </div>
+            ))}
+          </div>
+        </section>
 
-          <Link
-            to="/inventory-manager/archive"
-            className="flex items-center gap-4 p-6 border border-gray-100 rounded-lg hover:border-[#1769ff] hover:bg-[#1769ff]/5 transition-all group"
-          >
-            <div className="w-12 h-12 bg-[#ffbd2e]/10 rounded-lg flex items-center justify-center group-hover:bg-[#ffbd2e] transition-all">
-              <ArchiveIcon className="w-6 h-6 text-[#ffbd2e] group-hover:text-white transition-all" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Archive</h3>
-              <p className="text-sm text-gray-500">
-                View and restore deleted items
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            to="/inventory-manager/activities"
-            className="flex items-center gap-4 p-6 border border-gray-100 rounded-lg hover:border-[#1769ff] hover:bg-[#1769ff]/5 transition-all group"
-          >
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-500 transition-all">
-              <Activity className="w-6 h-6 text-purple-600 group-hover:text-white transition-all" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Activity Log</h3>
-              <p className="text-sm text-gray-500">
-                View all changes and activities
-              </p>
-            </div>
-          </Link>
-        </div>
+        {/* Footer info */}
+        <footer className="mt-16 pt-8 border-t border-slate-200/60">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-widest">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+            <span>Inventory Manager</span>
+            <span className="mx-1">·</span>
+            <span>LangPros Pro</span>
+          </div>
+        </footer>
       </div>
+
+      <style>{`
+        @keyframes fade-up {
+          from {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-up {
+          animation: fade-up 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+      `}</style>
     </div>
   );
 }

@@ -9,13 +9,13 @@ interface AuthState {
   role: UserRole | null;
   loading: boolean;
   navigate: ((path: string) => void) | null;
-  initializeAuth: () => Promise<void>;
+  initializeAuth: () => Promise<() => void>;
   signIn: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
   setNavigate: (fn: (path: string) => void) => void;
 }
 
-let isInitialized = false;
+let authCleanup: (() => void) | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -27,8 +27,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setNavigate: (fn) => set({ navigate: fn }),
 
   initializeAuth: async () => {
-    if (isInitialized) return;
-    isInitialized = true;
+    if (authCleanup) {
+      authCleanup();
+      authCleanup = null;
+    }
 
     const checkRole = async (userEmail: string) => {
       const { data, error } = await supabase
@@ -47,7 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (session) {
         const currentRole = get().role;
         const currentUser = get().user;
-        
+
         if (!currentRole || currentUser?.email !== session.user.email) {
           const role = await checkRole(session.user.email || "");
           set({ session, user: session.user, role, loading: false });
@@ -65,7 +67,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     await handleSession(session);
 
-    supabase.auth.onAuthStateChange(async (event, newSession) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (event === "SIGNED_IN") {
         set({ loading: true });
         await handleSession(newSession);
@@ -74,12 +78,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
         const currentRole = get().role;
         if (!currentRole) {
-           await handleSession(newSession);
+          await handleSession(newSession);
         } else {
-           set({ session: newSession, user: newSession?.user ?? null });
+          set({ session: newSession, user: newSession?.user ?? null });
         }
       }
     });
+
+    authCleanup = () => {
+      subscription.unsubscribe();
+      authCleanup = null;
+    };
+    return authCleanup;
   },
 
   signIn: async (email, password) => {

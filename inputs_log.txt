@@ -1,0 +1,10 @@
+Found input in: src\pages\inventory-manager\AddEquipment.tsx
+  Line 576: <input type="text" value={generatedSku || ""} readOnly placeholder="Select category info to generate" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-mono bg-gray-50 cursor-default focus:outline-none transition-colors text-gray-600" />
+  Line 584: <input type="text" value={serialNumber || ""} onChange={(e)=>setSerialNumber(e.target.value)} placeholder="XYZ-123" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-400 transition-colors" />
+  Line 669: <input type="date" value={purchaseDate || ""} onChange={(e) => setPurchaseDate(e.target.value)} className="w-full px-4 py-[9px] border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-400 transition-colors text-gray-900" />
+  Line 673: <input type="checkbox" checked={hasWarranty || false} onChange={(e) => { setHasWarranty(e.target.checked); if (!e.target.checked) { setWarrantyExpiry(""); } }} className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-0" />
+  Line 678: <input type="date" value={warrantyExpiry || ""} onChange={(e) => setWarrantyExpiry(e.target.value)} min={purchaseDate} className="w-full px-4 py-[9px] border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-400 transition-colors text-gray-900" />
+Found input in: src\pages\inventory-manager\Equipments.tsx
+Found input in: src\pages\inventory-manager\ImportEquipment.tsx
+  Line 504: <input type="file" accept=".csv" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} className="hidden" />
+Found input in: src\pages\inventory-manager\SingleEquipment.tsx

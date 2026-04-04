@@ -19,3 +19,11 @@
 - add log maintenance (last and next maintenance)
 
 ## Project manager
+
+## design rules
+
+input py-2.5
+rounded-lg
+page width and bg main div --> min-h-screen font-sans p-4 py-12
+sub div --> w-full mx-auto rounded-2xl overflow-hidden
+sub div --> p-6 md:p-10

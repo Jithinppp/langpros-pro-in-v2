@@ -1,30 +1,18 @@
+"use client";
+
 import { useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-  Transition,
-  Textarea,
-} from "@headlessui/react";
+import { Textarea } from "@headlessui/react";
 import { supabase } from "../../lib/supabase";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import SelectDropdown from "../../components/SelectDropdown";
 import Loading from "../../components/Loading";
+import AlertBanner from "../../components/AlertBanner";
 import { useEquipmentStore } from "../../store/equipmentStore";
-import {
-  ChevronLeft,
-  ChevronDown,
-  Check,
-  Plus,
-  Loader2,
-  AlertCircle,
-  Upload,
-} from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 
-// Types
 interface Category {
   id: string;
   name: string;
@@ -50,11 +38,25 @@ interface StorageLocation {
   name: string;
 }
 
+const conditionOptions = [
+  { value: "excellent", label: "Excellent" },
+  { value: "good", label: "Good" },
+  { value: "fair", label: "Fair" },
+  { value: "poor", label: "Poor" },
+];
+
+const statusOptions = [
+  { value: "available", label: "Available" },
+  { value: "rented", label: "Rented" },
+  { value: "deployed", label: "Deployed" },
+  { value: "maintenance", label: "Maintenance" },
+  { value: "retired", label: "Retired" },
+];
+
 export default function AddEquipment() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
 
-  // Use Zustand store for form state
   const {
     categoryId,
     subcategoryId,
@@ -68,6 +70,11 @@ export default function AddEquipment() {
     warrantyExpiry,
     hasWarranty,
     generatedSku,
+    supplierName,
+    invoiceNumber,
+    weight,
+    caseNumber,
+    remarks,
     isSubmitting,
     errors,
     submitError,
@@ -84,6 +91,11 @@ export default function AddEquipment() {
     setWarrantyExpiry,
     setHasWarranty,
     setGeneratedSku,
+    setSupplierName,
+    setInvoiceNumber,
+    setWeight,
+    setCaseNumber,
+    setRemarks,
     setIsSubmitting,
     setErrors,
     setSubmitError,
@@ -91,29 +103,10 @@ export default function AddEquipment() {
     reset,
   } = useEquipmentStore();
 
-  // Get params from URL to initialize or preserve state
   const categoryFromUrl = searchParams.get("category") || "";
   const subcategoryFromUrl = searchParams.get("subcategory") || "";
   const modelFromUrl = searchParams.get("model") || "";
 
-  // Condition options
-  const conditionOptions = [
-    { value: "excellent", label: "Excellent" },
-    { value: "good", label: "Good" },
-    { value: "fair", label: "Fair" },
-    { value: "poor", label: "Poor" },
-  ];
-
-  // Status options
-  const statusOptions = [
-    { value: "available", label: "Available" },
-    { value: "rented", label: "Rented" },
-    { value: "deployed", label: "Deployed" },
-    { value: "maintenance", label: "Maintenance" },
-    { value: "retired", label: "Retired" },
-  ];
-
-  // Fetch categories
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
@@ -128,7 +121,6 @@ export default function AddEquipment() {
     staleTime: 30000,
   });
 
-  // Find category ID from URL param using useMemo - no state setting in effect
   const categoryIdFromUrl = useMemo(() => {
     if (!categoryFromUrl || categories.length === 0) return "";
     const found = categories.find(
@@ -137,10 +129,8 @@ export default function AddEquipment() {
     return found ? found.id : "";
   }, [categoryFromUrl, categories]);
 
-  // Use either user selection or URL param
   const effectiveCategoryId = categoryId || categoryIdFromUrl;
 
-  // Fetch subcategories based on effective category
   const { data: subcategories = [], isLoading: loadingSubcategories } =
     useQuery({
       queryKey: ["subcategories", effectiveCategoryId],
@@ -159,7 +149,6 @@ export default function AddEquipment() {
       staleTime: 30000,
     });
 
-  // Find subcategory ID from URL param
   const subcategoryIdFromUrl = useMemo(() => {
     if (!subcategoryFromUrl || subcategories.length === 0) return "";
     const found = subcategories.find(
@@ -170,7 +159,6 @@ export default function AddEquipment() {
 
   const effectiveSubcategoryId = subcategoryId || subcategoryIdFromUrl;
 
-  // Fetch storage locations
   const { data: storageLocations = [] } = useQuery({
     queryKey: ["storage_locations"],
     queryFn: async () => {
@@ -184,7 +172,6 @@ export default function AddEquipment() {
     staleTime: 30000,
   });
 
-  // Fetch models based on effective subcategory
   const { data: models = [], isLoading: loadingModels } = useQuery({
     queryKey: ["models", effectiveSubcategoryId],
     queryFn: async () => {
@@ -202,7 +189,6 @@ export default function AddEquipment() {
     staleTime: 30000,
   });
 
-  // Find model ID from URL param
   const modelIdFromUrl = useMemo(() => {
     if (!modelFromUrl || models.length === 0) return "";
     const found = models.find(
@@ -213,7 +199,6 @@ export default function AddEquipment() {
 
   const effectiveModelId = modelId || modelIdFromUrl;
 
-  // Get selected objects
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === effectiveCategoryId),
     [categories, effectiveCategoryId],
@@ -229,7 +214,6 @@ export default function AddEquipment() {
     [models, effectiveModelId],
   );
 
-  // Generate SKU when category, subcategory, or model changes
   useEffect(() => {
     const generateSku = async () => {
       if (!selectedCategory || !selectedSubcategory || !selectedModel) {
@@ -239,7 +223,6 @@ export default function AddEquipment() {
 
       const prefix = `${selectedCategory.code}-${selectedSubcategory.code}-${selectedModel.code}-`;
 
-      // Find the last asset with this prefix
       const { data: existingAssets, error } = await supabase
         .from("assets")
         .select("sku")
@@ -270,7 +253,6 @@ export default function AddEquipment() {
     generateSku();
   }, [selectedCategory, selectedSubcategory, selectedModel, setGeneratedSku]);
 
-  // Reset dependent fields when parent changes
   const handleCategoryChange = (value: string) => {
     setCategoryId(value);
     setSubcategoryId("");
@@ -278,11 +260,11 @@ export default function AddEquipment() {
     setGeneratedSku("");
   };
 
-  // Check if selected category/subcategory/model still exists (not deleted)
-  // If deleted, clear the selection
   useEffect(() => {
     if (categories.length > 0 && effectiveCategoryId) {
-      const categoryExists = categories.some((c) => c.id === effectiveCategoryId);
+      const categoryExists = categories.some(
+        (c) => c.id === effectiveCategoryId,
+      );
       if (!categoryExists) {
         setCategoryId("");
         setSubcategoryId("");
@@ -290,11 +272,20 @@ export default function AddEquipment() {
         setGeneratedSku("");
       }
     }
-  }, [categories, effectiveCategoryId, setCategoryId, setSubcategoryId, setModelId, setGeneratedSku]);
+  }, [
+    categories,
+    effectiveCategoryId,
+    setCategoryId,
+    setSubcategoryId,
+    setModelId,
+    setGeneratedSku,
+  ]);
 
   useEffect(() => {
     if (subcategories.length > 0 && effectiveSubcategoryId) {
-      const subcategoryExists = subcategories.some((s) => s.id === effectiveSubcategoryId);
+      const subcategoryExists = subcategories.some(
+        (s) => s.id === effectiveSubcategoryId,
+      );
       if (!subcategoryExists) {
         setModelId("");
         setGeneratedSku("");
@@ -321,7 +312,6 @@ export default function AddEquipment() {
     setModelId(value);
   };
 
-  // Create asset mutation
   const createAssetMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("assets").insert({
@@ -334,6 +324,11 @@ export default function AddEquipment() {
         description: description || null,
         purchase_date: purchaseDate || null,
         warranty_expiry: warrantyExpiry || null,
+        supplier_name: supplierName || null,
+        invoice_number: invoiceNumber || null,
+        weight: weight ? parseFloat(weight) : null,
+        case_number: caseNumber ? parseInt(caseNumber, 10) : null,
+        remarks: remarks || null,
       });
 
       if (error) throw error;
@@ -353,15 +348,11 @@ export default function AddEquipment() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Clear previous errors
     setErrors({});
     setSubmitError("");
 
-    // Validation
     const newErrors: Record<string, string> = {};
 
-    // Category, Subcategory, Model validation
     if (!effectiveCategoryId) {
       newErrors.category = "Category is required";
     }
@@ -371,20 +362,12 @@ export default function AddEquipment() {
     if (!effectiveModelId) {
       newErrors.model = "Model is required";
     }
-
-    // Serial number is optional
-
-    // SKU validation
     if (!generatedSku) {
       newErrors.sku = "SKU is required";
     }
-
-    // Location validation
     if (!storageLocationId) {
       newErrors.location = "Location is required";
     }
-
-    // Date validation
     if (hasWarranty && !warrantyExpiry) {
       newErrors.warrantyExpiry =
         "Warranty expiry date is required when warranty is enabled";
@@ -397,8 +380,19 @@ export default function AddEquipment() {
           "Warranty date must be greater than or equal to purchase date";
       }
     }
+    if (weight && isNaN(parseFloat(weight))) {
+      newErrors.weight = "Weight must be a valid number";
+    }
+    if (weight && parseFloat(weight) < 0) {
+      newErrors.weight = "Weight cannot be negative";
+    }
+    if (caseNumber && isNaN(parseInt(caseNumber, 10))) {
+      newErrors.caseNumber = "Case number must be a valid integer";
+    }
+    if (caseNumber && parseInt(caseNumber, 10) < 0) {
+      newErrors.caseNumber = "Case number cannot be negative";
+    }
 
-    // If there are errors, display them
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -410,632 +404,373 @@ export default function AddEquipment() {
 
   if (loadingCategories) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loading className="w-10 h-10 text-[#1769ff] mb-4" />
-        <p className="text-gray-500 font-medium">Loading form...</p>
+      <div className="min-h-[100dvh] bg-[#FAFAFA] flex flex-col items-center justify-center">
+        <Loading className="w-10 h-10 text-slate-900 mb-4" />
+        <p className="text-sm text-slate-400">Loading configuration...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
-        {/* Breadcrumb and Title */}
-        <Link
-          to="/inventory-manager"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Inventory
-        </Link>
+    <div className="min-h-screen font-sans p-4 py-12">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden">
+        {successMessage && (
+          <AlertBanner
+            variant="success"
+            message={successMessage}
+            className="mb-8"
+          />
+        )}
 
-        <div className="mb-5">
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mb-4">
-              <div className="flex items-center gap-2">
-                <span>{successMessage}</span>
-              </div>
-            </div>
-          )}
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+        {submitError && (
+          <AlertBanner variant="error" message={submitError} className="mb-8" />
+        )}
+
+        <div className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
             Add New Equipment
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Fill in the details below to add equipment to your inventory
+          </h2>
+          <p className="text-slate-500 mt-2 text-sm">
+            Fill in the details below to add equipment to your inventory.
           </p>
-          <div className="mt-5">
-            <Link
-              to="/inventory-manager/import-equipment"
-              className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
-            >
-              <Upload className="w-4 h-4" />
-              Import from CSV
-            </Link>
-          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Category Selection */}
-          <div className="bg-white border border-gray-200 rounded-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Category
-            </h2>
+        <Link
+          to="/inventory-manager/import-equipment"
+          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 font-medium mb-10"
+        >
+          <Upload className="w-4 h-4" />
+          Import from CSV
+        </Link>
 
-            <div className="relative">
-              <Listbox
-                value={effectiveCategoryId || ""}
-                onChange={handleCategoryChange}
-              >
-                <div className="relative">
-                  <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
-                    <span
-                      className={
-                        effectiveCategoryId && selectedCategory ? "text-gray-900" : "text-gray-400"
-                      }
-                    >
-                      {effectiveCategoryId
-                        ? selectedCategory
-                          ? `${selectedCategory.name} (${selectedCategory.code})`
-                          : "Select Category"
-                        : "Select Category"}
-                    </span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </span>
-                  </ListboxButton>
-
-                  <Transition
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      {categories.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          No categories found
-                        </div>
-                      ) : (
-                        categories.map((cat) => (
-                          <ListboxOption
-                            key={cat.id}
-                            value={cat.id}
-                            className={({ active }) =>
-                              `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-[#1769ff]/10 text-[#1769ff]"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {cat.name} ({cat.code})
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-5 w-5" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))
-                      )}
-                    </ListboxOptions>
-                  </Transition>
-                </div>
-              </Listbox>
-            </div>
-
-            {/* Manage Categories Button */}
-            <div className="mt-3">
-              <Link
-                to="/inventory-manager/manage-categories"
-                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Manage Category
-              </Link>
-            </div>
-
-            {/* Inline Error */}
-            {errors.category && (
-              <p className="mt-2 text-sm text-red-600">{errors.category}</p>
-            )}
-          </div>
-
-          {/* Subcategory Selection */}
-          <div className="bg-white border border-gray-200 rounded-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Subcategory
-            </h2>
-
-            <div className="relative">
-              <Listbox
-                value={effectiveSubcategoryId || ""}
-                onChange={handleSubcategoryChange}
-                disabled={!effectiveCategoryId}
-              >
-                <div className="relative">
-                  <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
-                    <span
-                      className={
-                        effectiveSubcategoryId && selectedSubcategory
-                          ? "text-gray-900"
-                          : "text-gray-400"
-                      }
-                    >
-                      {loadingSubcategories ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading...
-                        </span>
-                      ) : effectiveSubcategoryId && selectedSubcategory ? (
-                        `${selectedSubcategory.name} (${selectedSubcategory.code})`
-                      ) : (
-                        "Select Subcategory"
-                      )}
-                    </span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </span>
-                  </ListboxButton>
-
-                  <Transition
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      {subcategories.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          No subcategories found
-                        </div>
-                      ) : (
-                        subcategories.map((sub) => (
-                          <ListboxOption
-                            key={sub.id}
-                            value={sub.id}
-                            className={({ active }) =>
-                              `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-[#1769ff]/10 text-[#1769ff]"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {sub.name} ({sub.code})
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-5 w-5" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))
-                      )}
-                    </ListboxOptions>
-                  </Transition>
-                </div>
-              </Listbox>
-            </div>
-
-            {/* Manage Subcategories Button */}
-            <div className="mt-3">
-              <Link
-                to="/inventory-manager/manage-subcategories"
-                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Manage Subcategory
-              </Link>
-            </div>
-
-            {/* Inline Error */}
-            {errors.subcategory && (
-              <p className="mt-2 text-sm text-red-600">{errors.subcategory}</p>
-            )}
-          </div>
-
-          {/* Model Selection */}
-          <div className="bg-white border border-gray-200 rounded-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Model</h2>
-
-            <div className="relative">
-              <Listbox
-                value={effectiveModelId || ""}
-                onChange={handleModelChange}
-                disabled={!effectiveSubcategoryId}
-              >
-                <div className="relative">
-                  <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
-                    <span
-                      className={
-                        effectiveModelId && selectedModel ? "text-gray-900" : "text-gray-400"
-                      }
-                    >
-                      {loadingModels ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading...
-                        </span>
-                      ) : effectiveModelId && selectedModel ? (
-                        `${selectedModel.name} (${selectedModel.code})`
-                      ) : (
-                        "Select Model"
-                      )}
-                    </span>
-                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </span>
-                  </ListboxButton>
-
-                  <Transition
-                    leave="transition ease-in duration-100"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      {models.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          No models found
-                        </div>
-                      ) : (
-                        models.map((model) => (
-                          <ListboxOption
-                            key={model.id}
-                            value={model.id}
-                            className={({ active }) =>
-                              `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-[#1769ff]/10 text-[#1769ff]"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {model.name} ({model.code})
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-5 w-5" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))
-                      )}
-                    </ListboxOptions>
-                  </Transition>
-                </div>
-              </Listbox>
-            </div>
-
-            {/* Manage Models Button */}
-            <div className="mt-3">
-              <Link
-                to="/inventory-manager/manage-models"
-                className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Manage Model
-              </Link>
-            </div>
-
-            {/* Inline Error */}
-            {errors.model && (
-              <p className="mt-2 text-sm text-red-600">{errors.model}</p>
-            )}
-          </div>
-
-          {/* Auto-generated SKU */}
-          <div className="bg-white border border-gray-200 rounded-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              SKU Configuration
-            </h2>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Auto-generated SKU
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={generatedSku}
-                  readOnly
-                  placeholder="Select category, subcategory, and model to generate SKU"
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md font-mono bg-gray-50 cursor-default focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+        <form onSubmit={handleSubmit} className="space-y-10">
+          {/* Section 1: Basic Details */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+              Basic Details
+            </h3>
+            <div className="space-y-6">
+              {/* Line 1: Category + Subcategory */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <SelectDropdown
+                  label="Category"
+                  value={effectiveCategoryId || ""}
+                  onChange={handleCategoryChange}
+                  options={categories.map((c) => ({
+                    value: c.id,
+                    label: `${c.name} (${c.code})`,
+                  }))}
+                  placeholder="Select Category"
+                  error={errors.category}
+                  emptyMessage="No categories found"
                 />
-                {generatedSku && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <span className="inline-flex items-center px-2 py-1 bg-[#00d26a]/10 text-[#00d26a] text-xs font-medium rounded">
-                      Auto
-                    </span>
-                  </div>
+                <SelectDropdown
+                  label="Subcategory"
+                  value={effectiveSubcategoryId || ""}
+                  onChange={handleSubcategoryChange}
+                  options={subcategories.map((s) => ({
+                    value: s.id,
+                    label: `${s.name} (${s.code})`,
+                  }))}
+                  placeholder="Select Subcategory"
+                  disabled={!effectiveCategoryId}
+                  loading={loadingSubcategories}
+                  error={errors.subcategory}
+                  emptyMessage="No subcategories found"
+                />
+              </div>
+
+              {/* Line 2: Model (full width) */}
+              <div>
+                <SelectDropdown
+                  label="Model"
+                  value={effectiveModelId || ""}
+                  onChange={handleModelChange}
+                  options={models.map((m) => ({
+                    value: m.id,
+                    label: `${m.name} (${m.code})`,
+                  }))}
+                  placeholder="Select Model"
+                  disabled={!effectiveSubcategoryId}
+                  loading={loadingModels}
+                  error={errors.model}
+                  emptyMessage="No models found"
+                />
+              </div>
+
+              {/* Line 3: SKU (full width) */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Auto-generated SKU
+                </label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={generatedSku}
+                    readOnly
+                    placeholder="Select category, subcategory, and model to generate SKU"
+                    className="shadow-none border-none"
+                  />
+                  {generatedSku && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-md">
+                        AUTO
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mt-2">
+                  Format: CAT-SUB-MOD-0001
+                </p>
+                {errors.sku && (
+                  <p className="text-sm text-red-500 mt-2">{errors.sku}</p>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Example: LAP-DSK-LEN-001 (Category-Subcategory-Model-Number)
-              </p>
 
-              {/* Inline Error */}
-              {errors.sku && (
-                <p className="mt-2 text-sm text-red-600">{errors.sku}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Equipment Details */}
-          <div className="bg-white border border-gray-200 rounded-md p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Equipment Details
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Serial Number"
-                value={serialNumber}
-                onChange={(e) => setSerialNumber(e.target.value)}
-                placeholder="Enter serial number"
-              />
-
-              {/* Storage Location Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <Listbox
+              {/* Line 4: Serial Number + Location */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Input
+                  label="Serial Number"
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                  placeholder="Enter serial number"
+                />
+                <SelectDropdown
+                  label="Location"
                   value={storageLocationId || ""}
                   onChange={setStorageLocationId}
-                >
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                      <span
-                        className={
-                          storageLocationId ? "text-gray-900" : "text-gray-400"
-                        }
-                      >
-                        {storageLocationId
-                          ? storageLocations.find(
-                              (l) => l.id === storageLocationId,
-                            )?.name
-                          : "Select Location"}
-                      </span>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition
-                      leave="transition ease-in duration-100"
-                      leaveFrom="opacity-100"
-                      leaveTo="opacity-0"
-                    >
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        {storageLocations.length === 0 ? (
-                          <div className="px-4 py-1 text-sm text-gray-500">
-                            No locations found
-                          </div>
-                        ) : (
-                          storageLocations.map((loc) => (
-                            <ListboxOption
-                              key={loc.id}
-                              value={loc.id}
-                              className={({ active }) =>
-                                `relative cursor-default select-none py-1 pl-10 pr-4 ${
-                                  active
-                                    ? "bg-[#1769ff]/10 text-[#1769ff]"
-                                    : "text-gray-900"
-                                }`
-                              }
-                            >
-                              {({ selected }) => (
-                                <>
-                                  <span
-                                    className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                  >
-                                    {loc.name}
-                                  </span>
-                                  {selected && (
-                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                      <Check className="h-5 w-5" />
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </ListboxOption>
-                          ))
-                        )}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-                <div className="mt-2">
-                  <Link
-                    to="/inventory-manager/add-storage-location"
-                    className="inline-flex items-center gap-1 text-sm text-[#1769ff] hover:text-[#1255d4] font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Storage Location
-                  </Link>
-                </div>
-
-                {/* Inline Error */}
-                {errors.location && (
-                  <p className="mt-2 text-sm text-red-600">{errors.location}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Condition <span className="text-red-500">*</span>
-                </label>
-                <Listbox value={condition} onChange={setCondition}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                      <span className="text-gray-900">
-                        {conditionOptions.find((c) => c.value === condition)
-                          ?.label || "Select condition"}
-                      </span>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition
-                      leave="transition ease-in duration-100"
-                      leaveFrom="opacity-100"
-                      leaveTo="opacity-0"
-                    >
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        {conditionOptions.map((cond) => (
-                          <ListboxOption
-                            key={cond.value}
-                            value={cond.value}
-                            className={({ active }) =>
-                              `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-[#1769ff]/10 text-[#1769ff]"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {cond.label}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-5 w-5" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <Listbox value={status} onChange={setStatus} disabled>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-not-allowed rounded-lg bg-gray-100 py-2 pl-4 pr-10 text-left border border-gray-200 focus:outline-none">
-                      <span className="text-gray-500">
-                        {statusOptions.find((s) => s.value === status)?.label ||
-                          "Available"}
-                      </span>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                  </div>
-                </Listbox>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Purchase Date
-                </label>
-                <input
-                  type="date"
-                  value={purchaseDate}
-                  onChange={(e) => setPurchaseDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]"
+                  options={storageLocations.map((l) => ({
+                    value: l.id,
+                    label: l.name,
+                  }))}
+                  placeholder="Select Location"
+                  error={errors.location}
+                  emptyMessage="No locations found"
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={hasWarranty}
-                    onChange={(e) => {
-                      setHasWarranty(e.target.checked);
-                      if (!e.target.checked) {
-                        setWarrantyExpiry("");
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-gray-300 text-[#1769ff] focus:ring-[#1769ff]"
+              {/* Line 5: Condition + Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <SelectDropdown
+                  label="Condition"
+                  value={condition}
+                  onChange={setCondition}
+                  options={conditionOptions}
+                  placeholder="Select Condition"
+                />
+                <div>
+                  <SelectDropdown
+                    label="Status"
+                    value={status}
+                    onChange={setStatus}
+                    options={statusOptions}
+                    placeholder="Select Status"
+                    disabled
                   />
-                  Has Warranty
-                </label>
-                {hasWarranty && (
-                  <div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Status defaults to Available
+                  </p>
+                </div>
+              </div>
+
+              {/* Line 6: Purchase Date (half width) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Purchase Date
+                  </label>
+                  <input
+                    type="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/5 transition-all duration-300"
+                  />
+                </div>
+                <div></div>
+              </div>
+
+              {/* Line 7: Has Warranty */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 text-sm font-medium text-slate-700 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={hasWarranty}
+                        onChange={(e) => {
+                          setHasWarranty(e.target.checked);
+                          if (!e.target.checked) {
+                            setWarrantyExpiry("");
+                          }
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 rounded-full bg-slate-200 peer-checked:bg-slate-900 transition-colors duration-300"></div>
+                      <div className="absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-md peer-checked:translate-x-5 transition-transform duration-300"></div>
+                    </div>
+                    Has Warranty
+                  </label>
+                </div>
+                <div></div>
+              </div>
+
+              {/* Line 8: Warranty Expiry Date (full width when shown) */}
+              {hasWarranty && (
+                <div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Warranty Expiry
+                    </label>
                     <input
                       type="date"
                       value={warrantyExpiry}
                       onChange={(e) => setWarrantyExpiry(e.target.value)}
                       min={purchaseDate}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]"
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/5 transition-all duration-300"
                     />
-                    {/* Inline Error */}
-                    {errors.warrantyExpiry && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.warrantyExpiry}
-                      </p>
-                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                  {errors.warrantyExpiry && (
+                    <p className="text-sm text-red-500 mt-2">
+                      {errors.warrantyExpiry}
+                    </p>
+                  )}
+                </div>
+              )}
 
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <Textarea
-                name="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Add a description..."
-                className="w-full px-3 py-2 min-h-30 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] resize-none"
-              />
+              {/* Line 8: Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Description
+                </label>
+                <Textarea
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Add a description..."
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/5 transition-all duration-300 resize-none"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Submission Error */}
-          {submitError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5" />
-                <span>{submitError}</span>
+          {/* Section 2: Shipment and Delivery */}
+          <div className="pt-6 border-t border-slate-200/60">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+              Shipment and Delivery
+            </h3>
+            <div className="space-y-6">
+              {/* Line 1: Supplier Name + Invoice Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Input
+                  label="Supplier Name"
+                  value={supplierName}
+                  onChange={(e) => setSupplierName(e.target.value)}
+                  placeholder="Enter supplier name"
+                />
+                <Input
+                  label="Invoice Number"
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  placeholder="Enter invoice number"
+                />
+              </div>
+
+              {/* Line 2: Weight + Case Number */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Input
+                  label="Weight (kg)"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  placeholder="Enter weight in kg"
+                  error={errors.weight}
+                />
+                <Input
+                  label="Case Number"
+                  type="number"
+                  min="0"
+                  value={caseNumber}
+                  onChange={(e) => setCaseNumber(e.target.value)}
+                  placeholder="Enter case number"
+                  error={errors.caseNumber}
+                />
+              </div>
+
+              {/* Line 3: Remarks (full width textarea) */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Remarks
+                </label>
+                <Textarea
+                  name="remarks"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  rows={3}
+                  placeholder="Add any additional remarks..."
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/5 transition-all duration-300 resize-none"
+                />
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end gap-4">
+          {/* Quick Manage */}
+          <div className="pt-6 border-t border-slate-200/60">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">
+              Quick Manage
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <Link
+                to="/inventory-manager/manage-categories"
+                className="flex items-center gap-2 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+              >
+                <Plus className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-600">
+                  Add Category
+                </span>
+              </Link>
+              <Link
+                to="/inventory-manager/manage-subcategories"
+                className="flex items-center gap-2 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+              >
+                <Plus className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-600">
+                  Add Subcategory
+                </span>
+              </Link>
+              <Link
+                to="/inventory-manager/manage-models"
+                className="flex items-center gap-2 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+              >
+                <Plus className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-600">
+                  Add Model
+                </span>
+              </Link>
+              <Link
+                to="/inventory-manager/add-storage-location"
+                className="flex items-center gap-2 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+              >
+                <Plus className="w-4 h-4 text-slate-500" />
+                <span className="text-sm font-medium text-slate-600">
+                  Add Location
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex items-center justify-end gap-4 pt-6 border-t border-slate-200/60">
             <Link to="/inventory-manager/equipments">
               <Button variant="secondary" type="button">
                 Cancel
               </Button>
             </Link>
             <Button variant="primary" type="submit" isLoading={isSubmitting}>
-              <Plus className="w-4 h-4 mr-1" />
-              Add Equipment
+              <Plus className="w-4 h-4 mr-2" />
+              {isSubmitting ? "Adding..." : "Add Equipment"}
             </Button>
           </div>
         </form>

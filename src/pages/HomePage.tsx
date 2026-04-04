@@ -30,7 +30,6 @@ function HomePage() {
     resolver: zodResolver(loginSchema),
   });
 
-  // If user is already logged in and has role, redirect
   useEffect(() => {
     if (session && role && !authLoading) {
       const redirectRoute = roleToPath[role];
@@ -56,64 +55,88 @@ function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-[100dvh] flex bg-[#FAFAFA] font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
+      {/* Noise overlay - fixed */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02] z-50 mix-blend-multiply">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }} />
+      </div>
+
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary p-12 flex-col justify-between">
-        <div>
+      <div className="hidden lg:flex lg:w-[55%] bg-[#050505] relative overflow-hidden p-12 flex-col justify-between">
+        {/* Ambient orbs */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(120,80,255,0.12)_0%,transparent_70%)] blur-[120px]" />
+          <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(80,200,120,0.08)_0%,transparent_70%)] blur-[100px]" />
+        </div>
+
+        <div className="relative z-10">
           <div className="flex items-center gap-3 text-white">
-            <span className="font-semibold text-xl tracking-wide">
-              LANGRPROS
+            <div className="w-2 h-2 bg-white rounded-full" />
+            <span className="font-semibold text-lg tracking-[0.2em] uppercase">
+              LangPros
             </span>
           </div>
         </div>
 
-        <div>
-          <h2 className="text-5xl font-bold text-white leading-tight mb-4">
-            Create.
-            <br />
-            Manage.
-            <br />
-            Inspire.
+        <div className="relative z-10">
+          <h2 className="text-5xl md:text-6xl lg:text-7xl font-semibold text-white leading-[0.95] tracking-tight">
+            Create.<br />
+            Manage.<br />
+            <span className="text-white/40">Inspire.</span>
           </h2>
-          <p className="text-white/70 text-lg max-w-md">
+          <p className="text-white/50 text-sm max-w-sm mt-8 leading-relaxed">
             Your all-in-one platform for project and inventory management
           </p>
         </div>
 
-        <div className="text-white/50 text-sm">
-          © Copyright 2026 | Langpros Language Solutions
+        <div className="relative z-10 text-white/30 text-xs tracking-widest uppercase">
+          © 2026 Langpros Language Solutions
         </div>
       </div>
 
       {/* Right side - Login form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+      <div className="w-full lg:w-[45%] flex items-center justify-center p-8 md:p-12 lg:p-16">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden mb-10">
-            <div className="flex items-center gap-3 text-primary">
-              <span className="font-semibold text-xl tracking-wide">
-                LANGRPROS
+          {/* Mobile logo */}
+          <div className="lg:hidden mb-12">
+            <div className="flex items-center gap-3 text-[#050505]">
+              <div className="w-2 h-2 bg-[#050505] rounded-full" />
+              <span className="font-semibold text-lg tracking-[0.2em] uppercase">
+                LangPros
               </span>
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back
-          </h1>
-          <p className="text-gray-500 mb-8">Enter your details to continue</p>
+          <div className="mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200/50 mb-6">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
+              <span className="text-[10px] text-slate-500 uppercase tracking-[0.15em] font-medium">
+                Authentication
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-tight leading-[1.05]">
+              Welcome back
+            </h1>
+            <p className="text-slate-500 mt-3 text-sm">
+              Enter your credentials to continue
+            </p>
+          </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="mb-6 p-4 bg-red-50/80 border border-red-100 rounded-[1rem]">
+              <p className="text-sm text-red-600 font-medium">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mt-5 mb-2"
+                className="block text-xs font-medium text-slate-500 uppercase tracking-[0.1em] mb-3"
               >
-                Email
+                Email Address
               </label>
               <Input
                 id="email"
@@ -121,14 +144,14 @@ function HomePage() {
                 {...register("email")}
                 error={errors.email?.message}
                 placeholder="hello@example.com"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full px-5 py-4 rounded-[1.25rem] bg-white border border-slate-200/60 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-300 transition-all shadow-[0_2px_12px_-4px_rgba(0,0,0,0.03)]"
               />
             </div>
 
-            <div className="">
+            <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mt-5 mb-2"
+                className="block text-xs font-medium text-slate-500 uppercase tracking-[0.1em] mb-3"
               >
                 Password
               </label>
@@ -138,7 +161,7 @@ function HomePage() {
                 {...register("password")}
                 error={errors.password?.message}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none  focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full px-5 py-4 rounded-[1.25rem] bg-white border border-slate-200/60 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-300 transition-all shadow-[0_2px_12px_-4px_rgba(0,0,0,0.03)]"
               />
             </div>
 
@@ -146,7 +169,7 @@ function HomePage() {
               variant="primary"
               type="submit"
               isLoading={loading}
-              className="w-full mt-2"
+              className="w-full mt-4"
               size="lg"
             >
               Sign in

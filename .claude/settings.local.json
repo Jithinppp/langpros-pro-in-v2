@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm:*)",
+      "Bash(rm -f \"C:/Users/JITHIN/Desktop/dev/langpros-pro-in-v2/tsconfig.tsbuildinfo\")",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -rl eslint . --include=*.js --include=*.ts --include=*.tsx --include=*.json)",
+      "Bash(npx vite:*)",
+      "Bash(ls:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/JITHIN/Desktop/dev/langpros-pro-in-v2/**)",
+      "Bash(npx eslint:*)"
+    ]
+  }
+}

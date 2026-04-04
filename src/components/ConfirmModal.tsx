@@ -38,31 +38,35 @@ export default function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
         onClick={onCancel}
       />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 duration-200">
-        <button
-          onClick={onCancel}
-          className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+      {/* Modal - Double bezel architecture */}
+      <div className="relative bg-white rounded-[2rem] w-full max-w-md mx-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] overflow-hidden">
+        <div className="absolute inset-0 border border-slate-200/60 rounded-[2rem]" />
+        
+        <div className="relative p-8">
+          <button
+            onClick={onCancel}
+            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
 
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-          <p className="text-gray-500 mt-2">{message}</p>
-        </div>
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-slate-900 tracking-tight">{title}</h2>
+            <p className="text-slate-500 mt-3 text-sm leading-relaxed">{message}</p>
+          </div>
 
-        <div className="flex items-center justify-end gap-3">
-          <Button variant="secondary" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button variant={variant === "warning" ? "primary" : variant} onClick={handleConfirm}>
-            {confirmLabel}
-          </Button>
+          <div className="flex items-center justify-end gap-3">
+            <Button variant="secondary" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+            <Button variant={variant === "warning" ? "primary" : variant} onClick={handleConfirm}>
+              {confirmLabel}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

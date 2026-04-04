@@ -9,7 +9,13 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    initializeAuth();
+    let cleanupFn: (() => void) | null = null;
+    initializeAuth().then((fn) => {
+      cleanupFn = fn;
+    });
+    return () => {
+      if (cleanupFn) cleanupFn();
+    };
   }, [initializeAuth]);
 
   useEffect(() => {

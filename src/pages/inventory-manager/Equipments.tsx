@@ -1,25 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-  Transition,
-} from "@headlessui/react";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Loading from "../../components/Loading";
+import SelectDropdown from "../../components/SelectDropdown";
 import { getStatusColor, getConditionColor } from "../../utils/theme";
 import { convertToCSV, downloadCSV, type ExportAsset } from "../../utils/csv";
 import {
   Search,
-  Plus,
   Archive,
   AlertCircle,
   ChevronDown,
-  Check,
   Filter,
   X,
   Loader2,
@@ -154,22 +146,23 @@ export default function EquipmentsPage() {
     staleTime: 60000,
   });
 
-  const { data: subcategories = [], isLoading: loadingSubcategories } = useQuery({
-    queryKey: ["subcategories", categoryId],
-    queryFn: async () => {
-      if (!categoryId) return [];
-      const { data, error } = await supabase
-        .from("subcategories")
-        .select("id, name, code, category_id")
-        .eq("category_id", categoryId)
-        .eq("is_active", true)
-        .order("name");
-      if (error) throw error;
-      return data as Subcategory[];
-    },
-    enabled: !!categoryId,
-    staleTime: 60000,
-  });
+  const { data: subcategories = [], isLoading: loadingSubcategories } =
+    useQuery({
+      queryKey: ["subcategories", categoryId],
+      queryFn: async () => {
+        if (!categoryId) return [];
+        const { data, error } = await supabase
+          .from("subcategories")
+          .select("id, name, code, category_id")
+          .eq("category_id", categoryId)
+          .eq("is_active", true)
+          .order("name");
+        if (error) throw error;
+        return data as Subcategory[];
+      },
+      enabled: !!categoryId,
+      staleTime: 60000,
+    });
 
   const { data: models = [], isLoading: loadingModels } = useQuery({
     queryKey: ["models", subcategoryId],
@@ -188,22 +181,38 @@ export default function EquipmentsPage() {
     staleTime: 60000,
   });
 
-  const { data: storageLocations = [], isLoading: loadingLocations } = useQuery({
-    queryKey: ["storage_locations"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("storage_locations")
-        .select("id, name")
-        .order("name");
-      if (error) throw error;
-      return data as StorageLocation[];
+  const { data: storageLocations = [], isLoading: loadingLocations } = useQuery(
+    {
+      queryKey: ["storage_locations"],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from("storage_locations")
+          .select("id, name")
+          .order("name");
+        if (error) throw error;
+        return data as StorageLocation[];
+      },
+      staleTime: 60000,
     },
-    staleTime: 60000,
-  });
+  );
 
   // Fetch assets with filters
-  const { data, isLoading: loading, error } = useQuery({
-    queryKey: ["assets_paginated", currentPage, debouncedSearch, categoryId, subcategoryId, modelId, locationId, statusFilter, conditionFilter],
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: [
+      "assets_paginated",
+      currentPage,
+      debouncedSearch,
+      categoryId,
+      subcategoryId,
+      modelId,
+      locationId,
+      statusFilter,
+      conditionFilter,
+    ],
     queryFn: async () => {
       let query = supabase
         .from("assets")
@@ -243,17 +252,17 @@ export default function EquipmentsPage() {
           .select("id")
           .eq("category_id", categoryId)
           .eq("is_active", true);
-        
+
         if (subcats && subcats.length > 0) {
-          const subcategoryIds = subcats.map(s => s.id);
+          const subcategoryIds = subcats.map((s) => s.id);
           const { data: modelData } = await supabase
             .from("models")
             .select("id")
             .in("subcategory_id", subcategoryIds)
             .eq("is_active", true);
-          
+
           if (modelData && modelData.length > 0) {
-            const validModelIds = modelData.map(m => m.id);
+            const validModelIds = modelData.map((m) => m.id);
             query = query.in("model_id", validModelIds);
           }
         }
@@ -266,9 +275,9 @@ export default function EquipmentsPage() {
           .select("id")
           .eq("subcategory_id", subcategoryId)
           .eq("is_active", true);
-        
+
         if (modelData && modelData.length > 0) {
-          const validModelIds = modelData.map(m => m.id);
+          const validModelIds = modelData.map((m) => m.id);
           query = query.in("model_id", validModelIds);
         }
       }
@@ -331,7 +340,13 @@ export default function EquipmentsPage() {
   };
 
   // Check if any filter is active
-  const hasActiveFilters = categoryId || subcategoryId || modelId || locationId || statusFilter || conditionFilter;
+  const hasActiveFilters =
+    categoryId ||
+    subcategoryId ||
+    modelId ||
+    locationId ||
+    statusFilter ||
+    conditionFilter;
 
   // Export to CSV
   const handleExport = async () => {
@@ -340,7 +355,8 @@ export default function EquipmentsPage() {
       // Fetch all active assets with related data
       let query = supabase
         .from("assets")
-        .select(`
+        .select(
+          `
           sku,
           serial_number,
           status,
@@ -361,13 +377,16 @@ export default function EquipmentsPage() {
             )
           ),
           storage_locations:location(name)
-        `)
+        `,
+        )
         .eq("is_active", true);
 
       // Apply filters if any
       if (debouncedSearch.trim()) {
         const search = debouncedSearch.trim().toLowerCase();
-        query = query.or(`sku.ilike.%${search}%,serial_number.ilike.%${search}%`);
+        query = query.or(
+          `sku.ilike.%${search}%,serial_number.ilike.%${search}%`,
+        );
       }
 
       if (statusFilter) {
@@ -411,6 +430,11 @@ export default function EquipmentsPage() {
           purchase_date: asset.purchase_date || "",
           warranty_expiry: asset.warranty_expiry || "",
           description: asset.description || "",
+          supplier_name: asset.supplier_name || "",
+          case_number: asset.case_number || "",
+          weight: asset.weight || "",
+          invoice_number: asset.invoice_number || "",
+          remarks: asset.remarks || "",
         };
       });
 
@@ -419,8 +443,8 @@ export default function EquipmentsPage() {
       if (categoryId && subcategories.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const subcategoryIds = subcategories.map((s: any) => s.id);
-        filteredExportData = exportData.filter((item: ExportAsset) => 
-          subcategoryIds.includes(item.model_code)
+        filteredExportData = exportData.filter((item: ExportAsset) =>
+          subcategoryIds.includes(item.model_code),
         );
       }
 
@@ -442,13 +466,13 @@ export default function EquipmentsPage() {
   const filteredModels = subcategoryId ? models : [];
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-8">
-        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="min-h-screen font-sans p-4 py-12">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden p-6 md:p-10">
+        <div className=" mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
               All Equipments
-            </h1>
+            </h2>
             <p className="text-gray-500 mt-1">
               View and manage your inventory ({totalCount} total)
             </p>
@@ -468,16 +492,6 @@ export default function EquipmentsPage() {
               )}
               Export
             </Button>
-            <Link to="/inventory-manager/add-equipment">
-              <Button
-                variant="primary"
-                size="md"
-                className="flex items-center gap-1 w-full md:w-auto"
-              >
-                <Plus className="w-4 h-4" />
-                Add Equipment
-              </Button>
-            </Link>
           </div>
         </div>
 
@@ -493,7 +507,6 @@ export default function EquipmentsPage() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-12 pr-4 py-3"
             />
           </div>
         </div>
@@ -502,20 +515,31 @@ export default function EquipmentsPage() {
         <div className="mb-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
               showFilters || hasActiveFilters
-                ? "border-[#1769ff] bg-[#1769ff]/5 text-[#1769ff]"
+                ? "border-[slate-900] bg-[slate-900]/5 text-[slate-900]"
                 : "border-gray-200 text-gray-600 hover:border-gray-300"
             }`}
           >
             <Filter className="w-3.5 h-3.5" />
             Filters
             {hasActiveFilters && (
-              <span className="bg-[#1769ff] text-white text-xs px-1.5 py-0.5 rounded-full">
-                {[categoryId, subcategoryId, modelId, locationId, statusFilter, conditionFilter].filter(Boolean).length}
+              <span className="bg-[slate-900] text-white text-xs px-1.5 py-0.5 rounded-full">
+                {
+                  [
+                    categoryId,
+                    subcategoryId,
+                    modelId,
+                    locationId,
+                    statusFilter,
+                    conditionFilter,
+                  ].filter(Boolean).length
+                }
               </span>
             )}
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`}
+            />
           </button>
         </div>
 
@@ -524,316 +548,86 @@ export default function EquipmentsPage() {
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Category */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
-                <Listbox value={categoryId} onChange={handleCategoryChange}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-10 pr-8 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                      <span className={categoryId ? "text-gray-900" : "text-gray-400"}>
-                        {loadingCategories ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading...
-                          </span>
-                        ) : categoryId
-                          ? categories.find((c) => c.id === categoryId)?.name
-                          : "All Categories"}
-                      </span>
-                      {categoryId && !loadingCategories && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        <ListboxOption value="" className={({ active }) =>
-                          `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                        }>
-                          <span className="block truncate">All Categories</span>
-                        </ListboxOption>
-                        {categories.map((cat) => (
-                          <ListboxOption key={cat.id} value={cat.id} className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                          }>
-                            {({ selected }) => (
-                              <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                                  {cat.name}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+              <SelectDropdown
+                label="Category"
+                value={categoryId}
+                onChange={handleCategoryChange}
+                options={[
+                  { value: "", label: "All Categories" },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                placeholder="All Categories"
+                loading={loadingCategories}
+                disabled={false}
+              />
 
               {/* Subcategory */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Subcategory</label>
-                <Listbox value={subcategoryId} onChange={handleSubcategoryChange} disabled={!categoryId}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-10 pr-8 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
-                      <span className={subcategoryId ? "text-gray-900" : "text-gray-400"}>
-                        {loadingSubcategories ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading...
-                          </span>
-                        ) : subcategoryId
-                          ? subcategories.find((s) => s.id === subcategoryId)?.name
-                          : "All Subcategories"}
-                      </span>
-                      {subcategoryId && !loadingSubcategories && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        <ListboxOption value="" className={({ active }) =>
-                          `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                        }>
-                          <span className="block truncate">All Subcategories</span>
-                        </ListboxOption>
-                        {filteredSubcategories.map((sub) => (
-                          <ListboxOption key={sub.id} value={sub.id} className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                          }>
-                            {({ selected }) => (
-                              <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                                  {sub.name}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+              <SelectDropdown
+                label="Subcategory"
+                value={subcategoryId}
+                onChange={handleSubcategoryChange}
+                options={[
+                  { value: "", label: "All Subcategories" },
+                  ...filteredSubcategories.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+                placeholder="All Subcategories"
+                loading={loadingSubcategories}
+                disabled={!categoryId}
+              />
 
               {/* Model */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Model</label>
-                <Listbox value={modelId} onChange={setModelId} disabled={!subcategoryId}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-10 pr-8 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] disabled:bg-gray-100 disabled:cursor-not-allowed">
-                      <span className={modelId ? "text-gray-900" : "text-gray-400"}>
-                        {loadingModels ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading...
-                          </span>
-                        ) : modelId
-                          ? models.find((m) => m.id === modelId)?.name
-                          : "All Models"}
-                      </span>
-                      {modelId && !loadingModels && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        <ListboxOption value="" className={({ active }) =>
-                          `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                        }>
-                          <span className="block truncate">All Models</span>
-                        </ListboxOption>
-                        {filteredModels.map((m) => (
-                          <ListboxOption key={m.id} value={m.id} className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                          }>
-                            {({ selected }) => (
-                              <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                                  {m.name} ({m.brand})
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+              <SelectDropdown
+                label="Model"
+                value={modelId}
+                onChange={setModelId}
+                options={[
+                  { value: "", label: "All Models" },
+                  ...filteredModels.map((m) => ({ value: m.id, label: `${m.name} (${m.brand})` })),
+                ]}
+                placeholder="All Models"
+                loading={loadingModels}
+                disabled={!subcategoryId}
+              />
 
               {/* Location */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Location</label>
-                <Listbox value={locationId} onChange={(val) => { setLocationId(val); setCurrentPage(1); }}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-10 pr-8 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                      <span className={locationId ? "text-gray-900" : "text-gray-400"}>
-                        {loadingLocations ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading...
-                          </span>
-                        ) : locationId
-                          ? storageLocations.find((l) => l.id === locationId)?.name
-                          : "All Locations"}
-                      </span>
-                      {locationId && !loadingLocations && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        <ListboxOption value="" className={({ active }) =>
-                          `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                        }>
-                          <span className="block truncate">All Locations</span>
-                        </ListboxOption>
-                        {storageLocations.map((loc) => (
-                          <ListboxOption key={loc.id} value={loc.id} className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                          }>
-                            {({ selected }) => (
-                              <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                                  {loc.name}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+              <SelectDropdown
+                label="Location"
+                value={locationId}
+                onChange={(val) => {
+                  setLocationId(val);
+                  setCurrentPage(1);
+                }}
+                options={[
+                  { value: "", label: "All Locations" },
+                  ...storageLocations.map((l) => ({ value: l.id, label: l.name })),
+                ]}
+                placeholder="All Locations"
+                loading={loadingLocations}
+              />
 
               {/* Status */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                <Listbox value={statusFilter} onChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-10 pr-8 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                      <span className={statusFilter ? "text-gray-900" : "text-gray-400"}>
-                        {statusOptions.find((s) => s.value === statusFilter)?.label || "All Status"}
-                      </span>
-                      {statusFilter && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        {statusOptions.map((opt) => (
-                          <ListboxOption key={opt.value} value={opt.value} className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                          }>
-                            {({ selected }) => (
-                              <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                                  {opt.label}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+              <SelectDropdown
+                label="Status"
+                value={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setCurrentPage(1);
+                }}
+                options={statusOptions}
+                placeholder="All Status"
+              />
 
               {/* Condition */}
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Condition</label>
-                <Listbox value={conditionFilter} onChange={(val) => { setConditionFilter(val); setCurrentPage(1); }}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-md bg-white py-2 pl-10 pr-8 text-left border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff]">
-                      <span className={conditionFilter ? "text-gray-900" : "text-gray-400"}>
-                        {conditionOptions.find((c) => c.value === conditionFilter)?.label || "All Condition"}
-                      </span>
-                      {conditionFilter && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                          <Check className="h-4 w-4" />
-                        </span>
-                      )}
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0">
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none">
-                        {conditionOptions.map((opt) => (
-                          <ListboxOption key={opt.value} value={opt.value} className={({ active }) =>
-                            `relative cursor-default select-none py-2 pl-10 pr-4 text-sm ${active ? "bg-[#1769ff]/10 text-[#1769ff]" : "text-gray-900"}`
-                          }>
-                            {({ selected }) => (
-                              <>
-                                <span className={`block truncate ${selected ? "font-medium" : "font-normal"}`}>
-                                  {opt.label}
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-4 w-4" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-              </div>
+              <SelectDropdown
+                label="Condition"
+                value={conditionFilter}
+                onChange={(val) => {
+                  setConditionFilter(val);
+                  setCurrentPage(1);
+                }}
+                options={conditionOptions}
+                placeholder="All Condition"
+              />
             </div>
 
             {/* Clear Filters */}
@@ -854,7 +648,7 @@ export default function EquipmentsPage() {
         {/* Loading State */}
         {loading && (
           <div className="min-h-screen flex flex-col items-center justify-center">
-            <Loading className="w-10 h-10 text-[#1769ff] mb-4" />
+            <Loading className="w-10 h-10 text-[slate-900] mb-4" />
             <p className="text-gray-500 font-medium">Loading catalog...</p>
           </div>
         )}
@@ -866,9 +660,13 @@ export default function EquipmentsPage() {
               <AlertCircle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <h3 className="font-bold text-red-800">Error loading equipment</h3>
+              <h3 className="font-bold text-red-800">
+                Error loading equipment
+              </h3>
               <p className="text-sm text-red-700/80 mt-1">
-                {error instanceof Error ? error.message : "An unknown error occurred"}
+                {error instanceof Error
+                  ? error.message
+                  : "An unknown error occurred"}
               </p>
             </div>
           </div>
@@ -926,7 +724,7 @@ export default function EquipmentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-md capitalize tracking-wide ${getStatusColor(asset.status)}`}
+                        className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-lg capitalize tracking-wide ${getStatusColor(asset.status)}`}
                       >
                         {asset.status || "Unknown"}
                       </span>
@@ -940,9 +738,9 @@ export default function EquipmentsPage() {
 
         {/* Empty State */}
         {!loading && !error && assets.length === 0 && (
-          <div className="border border-dashed border-gray-300 rounded-[24px] p-16 text-center bg-gray-50/50">
+          <div className="border border-dashed border-gray-300 rounded-3xl p-16 text-center bg-gray-50/50">
             <div className="w-16 h-16 bg-white border border-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Archive className="w-8 h-8 text-[#1769ff]" />
+              <Archive className="w-8 h-8 text-[slate-900]" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
               No assets found
@@ -966,7 +764,9 @@ export default function EquipmentsPage() {
         {!loading && !error && totalPages > 1 && (
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
             <div className="text-sm text-gray-500">
-              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} results
+              Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+              {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of{" "}
+              {totalCount} results
             </div>
             <div className="flex items-center gap-2">
               <Button
