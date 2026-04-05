@@ -43,27 +43,34 @@ export default function ConfirmModal({
       />
 
       {/* Modal - Double bezel architecture */}
-      <div className="relative bg-white rounded-[2rem] w-full max-w-md mx-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] overflow-hidden">
-        <div className="absolute inset-0 border border-slate-200/60 rounded-[2rem]" />
-        
+      <div className="relative bg-white rounded-xl w-full max-w-md mx-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.25)] overflow-hidden">
+        <div className="absolute inset-0 border border-slate-200/60 rounded-xl" />
+
         <div className="relative p-8">
           <button
             onClick={onCancel}
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
+            className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
           >
             <X className="w-4 h-4" />
           </button>
 
           <div className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 tracking-tight">{title}</h2>
-            <p className="text-slate-500 mt-3 text-sm leading-relaxed">{message}</p>
+            <h2 className="text-xl font-semibold text-slate-900 tracking-tight">
+              {title}
+            </h2>
+            <p className="text-slate-500 mt-3 text-sm leading-relaxed">
+              {message}
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-3">
             <Button variant="secondary" onClick={onCancel}>
               {cancelLabel}
             </Button>
-            <Button variant={variant === "warning" ? "primary" : variant} onClick={handleConfirm}>
+            <Button
+              variant={variant === "warning" ? "primary" : variant}
+              onClick={handleConfirm}
+            >
               {confirmLabel}
             </Button>
           </div>

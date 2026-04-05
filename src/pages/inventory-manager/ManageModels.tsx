@@ -1,17 +1,12 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-  Transition,
-} from "@headlessui/react";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
+import Textarea from "../../components/Textarea";
+import SelectDropdown from "../../components/SelectDropdown";
 import ConfirmModal from "../../components/ConfirmModal";
+import AlertBanner from "../../components/AlertBanner";
 import { useModelStore } from "../../store/modelStore";
 import {
   ChevronLeft,
@@ -22,8 +17,6 @@ import {
   Package,
   Pencil,
   Save,
-  ChevronDown,
-  Check,
 } from "lucide-react";
 
 interface Model {
@@ -93,6 +86,7 @@ export default function ManageModels() {
     setBrand,
     setDescription,
     setErrors,
+    clearError,
     setIsSubmitting,
     setSubmitError,
     setSuccessMessage,
@@ -138,6 +132,8 @@ export default function ManageModels() {
   const handleCategoryChange = (id: string) => {
     setFormCategoryId(id);
     setCurrentPage(1);
+    clearError("categoryId");
+    clearError("subcategoryId");
   };
 
   const { data: categories = [] } = useQuery({
@@ -320,253 +316,343 @@ export default function ManageModels() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-10 animate-in fade-in duration-500">
-        <Link
-          to="/inventory-manager/add-equipment"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-4"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Add Equipment
-        </Link>
+    <div className="min-h-screen font-sans p-4 py-12">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden p-6 md:p-10">
+        {successMessage && (
+          <AlertBanner
+            variant="success"
+            message={successMessage}
+            className="mb-8"
+          />
+        )}
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+        {submitError && (
+          <AlertBanner variant="error" message={submitError} className="mb-8" />
+        )}
+
+        <div className="mb-10">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
             Manage Models
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Add, edit, and delete models from your inventory
+          </h2>
+          <p className="text-slate-500 mt-2 text-sm">
+            Add, edit, and delete models from your inventory.
           </p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Add New Model
-            </h2>
+        <h3 className="text-lg font-semibold text-slate-900 mb-6">
+          Add New Model
+        </h3>
+        <form onSubmit={handleAdd} className="space-y-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <SelectDropdown
+              label="Category"
+              value={formCategoryId}
+              onChange={handleCategoryChange}
+              options={categories.map((c) => ({
+                value: c.id,
+                label: `${c.name} (${c.code})`,
+              }))}
+              placeholder="Select a category"
+              error={errors.categoryId}
+            />
+            <SelectDropdown
+              label="Subcategory"
+              value={formSubcategoryId}
+              onChange={(value) => { setFormSubcategoryId(value); clearError("subcategoryId"); }}
+              options={subcategories.map((s) => ({
+                value: s.id,
+                label: `${s.name} (${s.code})`,
+              }))}
+              placeholder="Select a subcategory"
+              disabled={!formCategoryId}
+              error={errors.subcategoryId}
+            />
           </div>
 
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-600">{successMessage}</p>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <Input
+              label="Model Name"
+              type="text"
+              value={name}
+              onChange={(e) => { setName(e.target.value); clearError("name"); }}
+              error={errors.name}
+              placeholder="e.g., Aputure 300x"
+            />
+            <Input
+              label="Model Code"
+              type="text"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
+              }
+              error={errors.code}
+              placeholder="e.g., 300X"
+              helperText="No spaces or special characters"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <Input
+              label="Brand"
+              type="text"
+              value={brand}
+              onChange={(e) => { setBrand(e.target.value); clearError("brand"); }}
+              error={errors.brand}
+              placeholder="e.g., Aputure"
+            />
+            <div></div>
+          </div>
+
+          <Textarea
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter model description (optional)"
+            rows={3}
+          />
+
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
+            <Save className="w-4 h-4 mr-2" />
+            {isSubmitting ? "Saving..." : "Save Model"}
+          </Button>
+        </form>
+
+        <div className="pt-6 border-t border-slate-200/60">
+          <h3 className="text-lg font-semibold text-slate-900 mb-6">Models</h3>
+
+          {deleteError && (
+            <AlertBanner
+              variant="error"
+              message={deleteError}
+              className="mb-6"
+            />
           )}
 
-          {submitError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{submitError}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleAdd} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <Listbox value={formCategoryId} onChange={handleCategoryChange}>
-                  <div className="relative">
-                    <ListboxButton className="relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300">
-                      <span
-                        className={
-                          formCategoryId ? "text-gray-900" : "text-gray-400"
-                        }
-                      >
-                        {formCategoryId
-                          ? categories.find((c) => c.id === formCategoryId)
-                              ?.name +
-                            " (" +
-                            categories.find((c) => c.id === formCategoryId)
-                              ?.code +
-                            ")"
-                          : "Select a category"}
-                      </span>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition
-                      leave="transition ease-in duration-100"
-                      leaveFrom="opacity-100"
-                      leaveTo="opacity-0"
-                    >
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        {categories.map((cat) => (
-                          <ListboxOption
-                            key={cat.id}
-                            value={cat.id}
-                            className={({ active }) =>
-                              `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-blue-50 text-[#1769ff]"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {cat.name} ({cat.code})
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-5 w-5" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-                {errors.categoryId && (
-                  <p className="mt-1.5 text-sm text-red-500">
-                    {errors.categoryId}
-                  </p>
-                )}
+          {!formCategoryId || !formSubcategoryId ? (
+            <div className="p-12 text-center">
+              <div className="w-14 h-14 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
+                <Package className="w-7 h-7 text-slate-300" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Subcategory <span className="text-red-500">*</span>
-                </label>
-                <Listbox
-                  value={formSubcategoryId}
-                  onChange={setFormSubcategoryId}
+              <p className="text-sm font-medium text-slate-500">
+                Select a category and subcategory to see models
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="p-12 text-center">
+              <p className="text-sm text-slate-400">Loading models...</p>
+            </div>
+          ) : models.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-14 h-14 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
+                <Package className="w-7 h-7 text-slate-300" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">
+                No models found for this selection.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {paginatedModels.map((model) => (
+                <div
+                  key={model.id}
+                  className="py-5 hover:bg-slate-50/50 transition-colors"
                 >
-                  <div className="relative">
-                    <ListboxButton
-                      className={`relative w-full cursor-default rounded-lg bg-white py-2 pl-4 pr-10 text-left border focus:outline-none focus:ring-1 focus:ring-[#1769ff]/20 focus:border-[#1769ff] bg-white border-gray-300 ${!formCategoryId ? "bg-gray-100 cursor-not-allowed opacity-50" : ""}`}
-                      disabled={!formCategoryId}
-                    >
-                      <span
-                        className={
-                          formSubcategoryId ? "text-gray-900" : "text-gray-400"
+                  {editingId === model.id ? (
+                    <form onSubmit={handleUpdate} className="space-y-6">
+                      {editErrors.root && (
+                        <p className="text-sm text-red-500">
+                          {editErrors.root}
+                        </p>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <SelectDropdown
+                          label="Category"
+                          value={
+                            editSubcategoryId
+                              ? allSubcategories.find(
+                                  (s) => s.id === editSubcategoryId,
+                                )?.category_id || ""
+                              : ""
+                          }
+                          onChange={(newCatId) => {
+                            const filteredSubs = allSubcategories.filter(
+                              (s) => s.category_id === newCatId,
+                            );
+                            setEditSubcategoryId(filteredSubs[0]?.id || "");
+                          }}
+                          options={categories.map((c) => ({
+                            value: c.id,
+                            label: `${c.name} (${c.code})`,
+                          }))}
+                          placeholder="Select a category"
+                        />
+                        <SelectDropdown
+                          label="Subcategory"
+                          value={editSubcategoryId}
+                          onChange={setEditSubcategoryId}
+                          options={
+                            editSubcategoryId
+                              ? allSubcategories
+                                  .filter(
+                                    (s) =>
+                                      s.category_id ===
+                                      allSubcategories.find(
+                                        (s) => s.id === editSubcategoryId,
+                                      )?.category_id,
+                                  )
+                                  .map((s) => ({
+                                    value: s.id,
+                                    label: `${s.name} (${s.code})`,
+                                  }))
+                              : []
+                          }
+                          placeholder="Select a subcategory"
+                          error={editErrors.subcategoryId}
+                        />
+                      </div>
+                      <Input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        error={editErrors.name}
+                        placeholder="Model name"
+                        label="Name"
+                      />
+                      <Input
+                        type="text"
+                        value={editCode}
+                        onChange={(e) =>
+                          setEditCode(
+                            e.target.value
+                              .toUpperCase()
+                              .replace(/[^A-Z0-9]/g, ""),
+                          )
                         }
-                      >
-                        {formSubcategoryId
-                          ? subcategories.find(
-                              (s) => s.id === formSubcategoryId,
-                            )?.name +
-                            " (" +
-                            subcategories.find(
-                              (s) => s.id === formSubcategoryId,
-                            )?.code +
-                            ")"
-                          : "Select a subcategory"}
-                      </span>
-                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      </span>
-                    </ListboxButton>
-                    <Transition
-                      leave="transition ease-in duration-100"
-                      leaveFrom="opacity-100"
-                      leaveTo="opacity-0"
-                    >
-                      <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        {subcategories.map((sub) => (
-                          <ListboxOption
-                            key={sub.id}
-                            value={sub.id}
-                            className={({ active }) =>
-                              `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                active
-                                  ? "bg-blue-50 text-[#1769ff]"
-                                  : "text-gray-900"
-                              }`
-                            }
-                          >
-                            {({ selected }) => (
-                              <>
-                                <span
-                                  className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
-                                >
-                                  {sub.name} ({sub.code})
-                                </span>
-                                {selected && (
-                                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1769ff]">
-                                    <Check className="h-5 w-5" />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </ListboxOption>
-                        ))}
-                      </ListboxOptions>
-                    </Transition>
-                  </div>
-                </Listbox>
-                {errors.subcategoryId && (
-                  <p className="mt-1.5 text-sm text-red-500">
-                    {errors.subcategoryId}
-                  </p>
-                )}
+                        error={editErrors.code}
+                        placeholder="Model code"
+                        label="Code"
+                        helperText="e.g., 300X"
+                      />
+                      <Input
+                        type="text"
+                        value={editBrand}
+                        onChange={(e) => setEditBrand(e.target.value)}
+                        error={editErrors.brand}
+                        placeholder="Brand"
+                        label="Brand"
+                      />
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          size="sm"
+                          disabled={isEditing}
+                        >
+                          <Save className="w-4 h-4 mr-1" />
+                          {isEditing ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-base font-semibold text-slate-900">
+                            {model.name}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
+                            {model.code}
+                          </span>
+                        </div>
+                        {model.description && (
+                          <p className="text-sm text-slate-500 mt-2">
+                            {model.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-400 mt-2">
+                          Created:{" "}
+                          {new Date(model.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(model)}
+                          className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+                          title="Edit model"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(model)}
+                          disabled={deleteId === model.id}
+                          className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                          title="Delete model"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-8 py-5 border-t border-slate-100">
+              <div className="text-xs text-slate-400">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, models.length)} of{" "}
+                {models.length} models
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
+                  title="First page"
+                >
+                  <ChevronFirst className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="px-4 py-2 text-xs text-slate-600 font-medium">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-2.5 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full hover:bg-slate-100 transition-colors"
+                  title="Last page"
+                >
+                  <ChevronLast className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <div className="space-y-4">
-              <Input
-                label="Model Name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                error={errors.name}
-                placeholder="e.g., Aputure 300x"
-                required
-              />
-              <Input
-                label="Model Code"
-                type="text"
-                value={code}
-                onChange={(e) =>
-                  setCode(
-                    e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
-                  )
-                }
-                error={errors.code}
-                placeholder="e.g., 300X"
-                required
-                helperText="No spaces or special characters. Example: 300X"
-              />
-              <Input
-                label="Brand"
-                type="text"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                error={errors.brand}
-                placeholder="e.g., Aputure"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Description <span className="text-gray-400">(Optional)</span>
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter model description"
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button type="submit" variant="primary" disabled={isSubmitting}>
-                <Save className="w-4 h-4 mr-2" />
-                {isSubmitting ? "Saving..." : "Save Model"}
-              </Button>
-            </div>
-          </form>
+          )}
         </div>
-
-        {deleteError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{deleteError}</p>
-          </div>
-        )}
 
         <ConfirmModal
           isOpen={showDeleteModal}
@@ -581,249 +667,6 @@ export default function ManageModels() {
           }}
           variant="danger"
         />
-
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {!formCategoryId || !formSubcategoryId ? (
-            <div className="p-8 text-center text-gray-500">
-              <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>Select a category and subcategory to see models</p>
-            </div>
-          ) : isLoading ? (
-            <div className="p-8 text-center text-gray-500">
-              Loading models...
-            </div>
-          ) : models.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-              <p>No models found for this selection.</p>
-            </div>
-          ) : (
-            <>
-              <div className="divide-y divide-gray-100">
-                {paginatedModels.map((model) => (
-                  <div
-                    key={model.id}
-                    className="p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    {editingId === model.id ? (
-                      <form onSubmit={handleUpdate} className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Category
-                            </label>
-                            <select
-                              value={
-                                editSubcategoryId
-                                  ? allSubcategories.find(
-                                      (s) => s.id === editSubcategoryId,
-                                    )?.category_id || ""
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const newCatId = e.target.value;
-                                const filteredSubs = allSubcategories.filter(
-                                  (s) => s.category_id === newCatId,
-                                );
-                                setEditSubcategoryId(filteredSubs[0]?.id || "");
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white"
-                            >
-                              <option value="">Select a category</option>
-                              {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                  {cat.name} ({cat.code})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Subcategory
-                            </label>
-                            <select
-                              value={editSubcategoryId}
-                              onChange={(e) =>
-                                setEditSubcategoryId(e.target.value)
-                              }
-                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1769ff] bg-white ${
-                                editErrors.subcategoryId
-                                  ? "border-red-300"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              <option value="">Select a subcategory</option>
-                              {allSubcategories
-                                .filter(
-                                  (s) =>
-                                    s.category_id ===
-                                    (allSubcategories.find(
-                                      (s) => s.id === editSubcategoryId,
-                                    )?.category_id ||
-                                      allSubcategories.find(
-                                        (s) => s.id === editSubcategoryId,
-                                      )?.category_id),
-                                )
-                                .map((sub) => (
-                                  <option key={sub.id} value={sub.id}>
-                                    {sub.name} ({sub.code})
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-                        </div>
-                        <Input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          error={editErrors.name}
-                          placeholder="Model name"
-                          label="Model Name"
-                        />
-                        <Input
-                          type="text"
-                          value={editCode}
-                          onChange={(e) =>
-                            setEditCode(
-                              e.target.value
-                                .toUpperCase()
-                                .replace(/[^A-Z0-9]/g, ""),
-                            )
-                          }
-                          error={editErrors.code}
-                          placeholder="Model code"
-                          label="Model Code"
-                          helperText="e.g., 300X"
-                        />
-                        <Input
-                          type="text"
-                          value={editBrand}
-                          onChange={(e) => setEditBrand(e.target.value)}
-                          error={editErrors.brand}
-                          placeholder="Brand"
-                          label="Brand"
-                        />
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="submit"
-                            variant="primary"
-                            size="sm"
-                            disabled={isEditing}
-                          >
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setEditingId(null)}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </form>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-lg font-medium text-gray-900">
-                              {model.name}
-                            </span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                              {model.code}
-                            </span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
-                              {model.brand}
-                            </span>
-                            {model.subcategories && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
-                                {model.subcategories.name} (
-                                {model.subcategories.code})
-                              </span>
-                            )}
-                          </div>
-                          {model.description && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              {model.description}
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-400 mt-1">
-                            Created:{" "}
-                            {new Date(model.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleEdit(model)}
-                            className="p-2 text-gray-400 hover:text-[#1769ff] hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit model"
-                          >
-                            <Pencil className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(model)}
-                            disabled={deleteId === model.id}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                            title="Delete model"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
-                  <div className="text-sm text-gray-500">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                    {Math.min(currentPage * itemsPerPage, models.length)} of{" "}
-                    {models.length} models
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handlePageChange(1)}
-                      disabled={currentPage === 1}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="First page"
-                    >
-                      <ChevronFirst className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Previous page"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="px-3 py-1 text-sm text-gray-700">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Next page"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handlePageChange(totalPages)}
-                      disabled={currentPage === totalPages}
-                      className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Last page"
-                    >
-                      <ChevronLast className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
       </div>
     </div>
   );

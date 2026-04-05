@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
 import Loading from "../../components/Loading";
+import AlertBanner from "../../components/AlertBanner";
 import {
   Listbox,
   ListboxButton,
@@ -13,7 +14,6 @@ import {
 } from "@headlessui/react";
 
 import {
-  ChevronLeft,
   ChevronDown,
   Upload,
   FileSpreadsheet,
@@ -106,21 +106,21 @@ export default function ImportEquipment() {
   });
 
   const { data: subcategories = [] } = useQuery({
-      queryKey: ["subcategories", categoryId],
-      queryFn: async () => {
-        if (!categoryId) return [];
-        const { data, error } = await supabase
-          .from("subcategories")
-          .select("id, name, code, category_id")
-          .eq("category_id", categoryId)
-          .eq("is_active", true)
-          .order("name");
-        if (error) throw error;
-        return data as Subcategory[];
-      },
-      enabled: !!categoryId,
-      staleTime: 30000,
-    });
+    queryKey: ["subcategories", categoryId],
+    queryFn: async () => {
+      if (!categoryId) return [];
+      const { data, error } = await supabase
+        .from("subcategories")
+        .select("id, name, code, category_id")
+        .eq("category_id", categoryId)
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data as Subcategory[];
+    },
+    enabled: !!categoryId,
+    staleTime: 30000,
+  });
 
   const { data: models = [] } = useQuery({
     queryKey: ["models", subcategoryId],
@@ -187,11 +187,18 @@ export default function ImportEquipment() {
     setCategoryId(id);
     setSubcategoryId("");
     setModelId("");
+    setImportError("");
   };
 
   const handleSubcategoryChange = (id: string) => {
     setSubcategoryId(id);
     setModelId("");
+    setImportError("");
+  };
+
+  const handleModelChange = (id: string) => {
+    setModelId(id);
+    setImportError("");
   };
 
   const parseCSVData = (file: File) => {
@@ -432,57 +439,50 @@ export default function ImportEquipment() {
   if (loadingCategories) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loading className="w-10 h-10 text-[#1769ff] mb-4" />
+        <Loading className="w-10 h-10 mb-4" />
         <p className="text-gray-500 font-medium">Loading form...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans p-4 py-12">
-      <div className="w-full max-w-[800px] mx-auto bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div className="min-h-screen font-sans p-4 py-12">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden ">
         <div className="p-6 md:p-10">
-          <Link
-            to="/inventory-manager"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#1769ff] transition-colors mb-6"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-
           {importResult && importResult.failed === 0 && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-8 flex items-center gap-2">
-              <Check className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">
-                Import completed: {importResult.success} succeeded
-              </span>
-            </div>
+            <AlertBanner
+              variant="success"
+              message={`Import completed: ${importResult.success} succeeded`}
+              className="mb-8"
+            />
           )}
           {importResult && importResult.failed > 0 && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-8 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">
-                Import completed: {importResult.success} succeeded,{" "}
-                {importResult.failed} failed
-              </span>
-            </div>
+            <AlertBanner
+              variant="error"
+              message={`Import completed: ${importResult.success} succeeded, ${importResult.failed} failed`}
+              className="mb-8"
+            />
           )}
           {importError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-8 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{importError}</span>
-            </div>
+            <AlertBanner
+              variant="error"
+              message={importError}
+              className="mb-8"
+            />
           )}
 
-          <h2 className="text-2xl font-semibold text-gray-900 tracking-tight mb-2">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
             Import Equipment
           </h2>
-          <p className="text-sm text-gray-500 mb-8">
+          <p
+            className="text-slate-500 mt-2 mb-4 text-sm
+"
+          >
             Upload a CSV file to import multiple equipment items at once.
           </p>
 
           {/* Select Model Section */}
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-slate-900 mb-6">
             Select Model
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-0">
@@ -612,7 +612,7 @@ export default function ImportEquipment() {
               </label>
               <Listbox
                 value={modelId}
-                onChange={setModelId}
+                onChange={handleModelChange}
                 disabled={!subcategoryId}
               >
                 <div className="relative">
@@ -677,7 +677,7 @@ export default function ImportEquipment() {
 
           {/* Upload CSV Section */}
           <div className="pt-4 border-t border-gray-100 mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">
               Upload CSV File
             </h3>
             <div className="flex items-center justify-between mb-4">
@@ -686,7 +686,7 @@ export default function ImportEquipment() {
               </p>
               <Button
                 variant="secondary"
-                size="sm"
+                size="md"
                 onClick={downloadTemplate}
                 className="flex items-center gap-2"
               >
@@ -697,15 +697,16 @@ export default function ImportEquipment() {
 
             {/* File-level error */}
             {fileError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm font-medium">{fileError}</span>
-              </div>
+              <AlertBanner
+                variant="error"
+                message={fileError}
+                className="mb-4"
+              />
             )}
 
             {!csvFile ? (
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging ? "border-[#1769ff] bg-blue-50" : "border-gray-300 hover:border-[#1769ff]"}`}
+                className={`border-2 border-dashed rounded-lg p-8 text-center duration-300 transition-colors ${isDragging ? "border-[#0f172b] bg-blue-50" : "border-gray-300 hover:border-[#0f172b]"}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -717,7 +718,7 @@ export default function ImportEquipment() {
                 <p className="text-sm text-gray-400">
                   Maximum {MAX_IMPORT_ROWS} rows per import
                 </p>
-                <label className="inline-flex items-center justify-center px-4 py-2 bg-[#1769ff] text-white font-medium rounded-md hover:bg-[#1255d4] transition-colors mt-4 cursor-pointer">
+                <label className="transition-all duration-300 inline-flex items-center justify-center px-4 py-2 font-medium rounded-xl mt-4 cursor-pointer bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-900/20 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.2)]">
                   Select File
                   <input
                     type="file"
@@ -733,7 +734,7 @@ export default function ImportEquipment() {
               <div>
                 <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg mb-4">
                   <div className="flex items-center gap-3">
-                    <FileSpreadsheet className="w-8 h-8 text-[#1769ff]" />
+                    <FileSpreadsheet className="w-8 h-8 text-[#0f172b]" />
                     <div>
                       <p className="font-medium text-gray-900">
                         {csvFile?.name}
@@ -844,7 +845,7 @@ export default function ImportEquipment() {
                               onClick={() => setCsvPage(page)}
                               className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                                 csvPage === page
-                                  ? "bg-[#1769ff] text-white border border-[#1769ff]"
+                                  ? "bg-[#0f172b] text-white border border-[#0f172b]"
                                   : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
                               }`}
                             >
@@ -868,18 +869,11 @@ export default function ImportEquipment() {
                 {importResult ? (
                   <div>
                     {importResult.failed > 0 && (
-                      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                        <div>
-                          <span className="font-medium text-sm">
-                            Some items failed to import.
-                          </span>
-                          <p className="text-sm text-red-600 mt-1">
-                            This could be due to duplicate serial numbers, data
-                            validation errors, or database constraints.
-                          </p>
-                        </div>
-                      </div>
+                      <AlertBanner
+                        variant="error"
+                        message="Some items failed to import. This could be due to duplicate serial numbers, data validation errors, or database constraints."
+                        className="mb-4"
+                      />
                     )}
                     <Button variant="secondary" onClick={resetImport}>
                       Import More
@@ -918,7 +912,7 @@ export default function ImportEquipment() {
       </div>
 
       {/* How to Use Section */}
-      <div className="w-full max-w-[800px] mx-auto mt-6 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden ">
         <div className="p-6 md:p-10">
           <h3 className="text-lg font-medium text-gray-900 mb-6">How to Use</h3>
           <div className="space-y-4 text-sm text-gray-700">

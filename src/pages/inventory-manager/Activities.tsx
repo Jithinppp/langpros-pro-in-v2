@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import SelectDropdown from "../../components/SelectDropdown";
-import { ChevronLeft, Search, Loader2 } from "lucide-react";
+import Loading from "../../components/Loading";
+import { Search } from "lucide-react";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -255,7 +255,7 @@ export default function Activities() {
 
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              <Loading className="w-8 h-8 text-gray-400" />
             </div>
           ) : data?.records.length === 0 ? (
             <div className="py-20 text-center">

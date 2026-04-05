@@ -54,6 +54,7 @@ interface EquipmentFormState {
   setRemarks: (remarks: string) => void;
   setIsSubmitting: (submitting: boolean) => void;
   setErrors: (errors: Record<string, string>) => void;
+  clearError: (key: string) => void;
   setSubmitError: (error: string) => void;
   setSuccessMessage: (msg: string) => void;
   reset: () => void;
@@ -114,6 +115,11 @@ export const useEquipmentStore = create<EquipmentFormState>((set) => ({
   setRemarks: (remarks) => set({ remarks }),
   setIsSubmitting: (submitting) => set({ isSubmitting: submitting }),
   setErrors: (errors) => set({ errors }),
+  clearError: (key) => set((state) => {
+    const newErrors = { ...state.errors };
+    delete newErrors[key];
+    return { errors: newErrors };
+  }),
   setSubmitError: (error) => set({ submitError: error }),
   setSuccessMessage: (msg) => set({ successMessage: msg }),
   reset: () => set(equipmentInitialState),

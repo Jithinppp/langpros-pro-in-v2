@@ -32,6 +32,7 @@ interface ModelFormState {
   setBrand: (brand: string) => void;
   setDescription: (desc: string) => void;
   setErrors: (errors: Record<string, string>) => void;
+  clearError: (key: string) => void;
   setIsSubmitting: (submitting: boolean) => void;
   setSubmitError: (error: string) => void;
   setSuccessMessage: (msg: string) => void;
@@ -43,6 +44,7 @@ interface ModelFormState {
   setEditSubcategoryId: (id: string) => void;
   setEditDescription: (desc: string) => void;
   setEditErrors: (errors: Record<string, string>) => void;
+  clearEditError: (key: string) => void;
   setIsEditing: (editing: boolean) => void;
   resetForm: () => void;
 }
@@ -83,6 +85,11 @@ export const useModelStore = create<ModelFormState>((set) => ({
   setBrand: (brand) => set({ brand }),
   setDescription: (desc) => set({ description: desc }),
   setErrors: (errors) => set({ errors }),
+  clearError: (key) => set((state) => {
+    const newErrors = { ...state.errors };
+    delete newErrors[key];
+    return { errors: newErrors };
+  }),
   setIsSubmitting: (submitting) => set({ isSubmitting: submitting }),
   setSubmitError: (error) => set({ submitError: error }),
   setSuccessMessage: (msg) => set({ successMessage: msg }),
@@ -94,6 +101,11 @@ export const useModelStore = create<ModelFormState>((set) => ({
   setEditSubcategoryId: (id) => set({ editSubcategoryId: id }),
   setEditDescription: (desc) => set({ editDescription: desc }),
   setEditErrors: (errors) => set({ editErrors: errors }),
+  clearEditError: (key) => set((state) => {
+    const newErrors = { ...state.editErrors };
+    delete newErrors[key];
+    return { editErrors: newErrors };
+  }),
   setIsEditing: (editing) => set({ isEditing: editing }),
   resetForm: () => set({
     name: "",

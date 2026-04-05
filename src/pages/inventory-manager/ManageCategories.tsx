@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +8,8 @@ import Button from "../../components/Button";
 import Input from "../../components/Input";
 import Textarea from "../../components/Textarea";
 import ConfirmModal from "../../components/ConfirmModal";
-import { ChevronLeft, Trash2, Package, Pencil, Save, Check, AlertCircle } from "lucide-react";
+import AlertBanner from "../../components/AlertBanner";
+import { Trash2, Package, Pencil, Save } from "lucide-react";
 
 interface Category {
   id: string;
@@ -31,7 +31,9 @@ export default function ManageCategories() {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+    null,
+  );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -60,7 +62,11 @@ export default function ManageCategories() {
   });
 
   const addMutation = useMutation({
-    mutationFn: async (data: { name: string; code: string; description: string }) => {
+    mutationFn: async (data: {
+      name: string;
+      code: string;
+      description: string;
+    }) => {
       const { error } = await supabase.from("categories").insert([data]);
       if (error) throw error;
     },
@@ -72,15 +78,26 @@ export default function ManageCategories() {
       setTimeout(() => setSuccessMessage(""), 3000);
     },
     onError: (err: Error) => {
-      addForm.setError("root", { message: err.message || "Failed to add category" });
+      addForm.setError("root", {
+        message: err.message || "Failed to add category",
+      });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { id: string; name: string; code: string; description: string }) => {
+    mutationFn: async (data: {
+      id: string;
+      name: string;
+      code: string;
+      description: string;
+    }) => {
       const { error } = await supabase
         .from("categories")
-        .update({ name: data.name, code: data.code, description: data.description })
+        .update({
+          name: data.name,
+          code: data.code,
+          description: data.description,
+        })
         .eq("id", data.id);
       if (error) throw error;
     },
@@ -90,13 +107,17 @@ export default function ManageCategories() {
       setEditingId(null);
     },
     onError: (err: Error) => {
-      editForm.setError("root", { message: err.message || "Failed to update category" });
+      editForm.setError("root", {
+        message: err.message || "Failed to update category",
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc("soft_delete_category", { p_id: id });
+      const { error } = await supabase.rpc("soft_delete_category", {
+        p_id: id,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -131,32 +152,28 @@ export default function ManageCategories() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#FAFAFA] font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
-      <div className="max-w-3xl mx-auto px-4">
-        <Link
-          to="/inventory-manager"
-          className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors mb-8 uppercase tracking-[0.1em]"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Link>
-
+    <div className="min-h-screen font-sans p-4 py-12">
+      <div className="w-full mx-auto rounded-2xl overflow-hidden p-6 md:p-10">
         {successMessage && (
-          <div className="bg-emerald-50/80 border border-emerald-200/50 text-emerald-700 px-5 py-4 rounded-[1.25rem] mb-8 flex items-center gap-3">
-            <Check className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm font-medium">{successMessage}</span>
-          </div>
+          <AlertBanner
+            variant="success"
+            message={successMessage}
+            className="mb-8"
+          />
         )}
 
         {addForm.formState.errors.root && (
-          <div className="bg-red-50/80 border border-red-200/50 text-red-700 px-5 py-4 rounded-[1.25rem] mb-8 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm font-medium">{addForm.formState.errors.root.message}</span>
-          </div>
+          <AlertBanner
+            variant="error"
+            message={
+              addForm.formState.errors.root.message || "An error occurred"
+            }
+            className="mb-8"
+          />
         )}
 
         <div className="mb-10">
-          <h2 className="text-3xl font-semibold text-slate-900 tracking-tight">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
             Manage Categories
           </h2>
           <p className="text-slate-500 mt-2 text-sm">
@@ -164,14 +181,16 @@ export default function ManageCategories() {
           </p>
         </div>
 
-        <h3 className="text-lg font-semibold text-slate-900 mb-6">Add New Category</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-6">
+          Add New Category
+        </h3>
         <form
           onSubmit={addForm.handleSubmit((data) =>
             addMutation.mutate({
               name: data.name.trim(),
               code: data.code.trim().toUpperCase(),
               description: data.description?.trim() || "",
-            })
+            }),
           )}
           className="space-y-6 mb-10"
         >
@@ -210,13 +229,16 @@ export default function ManageCategories() {
         </form>
 
         <div className="pt-6 border-t border-slate-200/60">
-          <h3 className="text-lg font-semibold text-slate-900 mb-6">Categories</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-6">
+            Categories
+          </h3>
 
           {deleteError && (
-            <div className="bg-red-50/80 border border-red-200/50 text-red-700 px-5 py-4 rounded-[1.25rem] mb-6 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{deleteError}</span>
-            </div>
+            <AlertBanner
+              variant="error"
+              message={deleteError}
+              className="mb-6"
+            />
           )}
 
           {isLoading ? (
@@ -225,15 +247,20 @@ export default function ManageCategories() {
             </div>
           ) : categories.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="w-14 h-14 rounded-[1.5rem] bg-slate-100 flex items-center justify-center mx-auto mb-5">
+              <div className="w-14 h-14 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
                 <Package className="w-7 h-7 text-slate-300" />
               </div>
-              <p className="text-sm font-medium text-slate-500">No categories found.</p>
+              <p className="text-sm font-medium text-slate-500">
+                No categories found.
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
               {categories.map((category) => (
-                <div key={category.id} className="py-5 hover:bg-slate-50/50 transition-colors">
+                <div
+                  key={category.id}
+                  className="py-5 hover:bg-slate-50/50 transition-colors"
+                >
                   {editingId === category.id ? (
                     <form
                       onSubmit={editForm.handleSubmit((data) =>
@@ -242,12 +269,14 @@ export default function ManageCategories() {
                           name: data.name.trim(),
                           code: data.code.trim().toUpperCase(),
                           description: data.description?.trim() || "",
-                        })
+                        }),
                       )}
                       className="space-y-6"
                     >
                       {editForm.formState.errors.root && (
-                        <p className="text-sm text-red-500">{editForm.formState.errors.root.message}</p>
+                        <p className="text-sm text-red-500">
+                          {editForm.formState.errors.root.message}
+                        </p>
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <Input
@@ -274,27 +303,60 @@ export default function ManageCategories() {
                         rows={3}
                       />
                       <div className="flex items-center gap-3">
-                        <Button type="submit" variant="primary" size="sm" disabled={updateMutation.isPending}>
-                          <Save className="w-4 h-4 mr-1" /> {updateMutation.isPending ? "Saving..." : "Save"}
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          size="sm"
+                          disabled={updateMutation.isPending}
+                        >
+                          <Save className="w-4 h-4 mr-1" />{" "}
+                          {updateMutation.isPending ? "Saving..." : "Save"}
                         </Button>
-                        <Button type="button" variant="secondary" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     </form>
                   ) : (
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <span className="text-base font-semibold text-slate-900">{category.name}</span>
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">{category.code}</span>
+                          <span className="text-base font-semibold text-slate-900">
+                            {category.name}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
+                            {category.code}
+                          </span>
                         </div>
-                        {category.description && <p className="text-sm text-slate-500 mt-2">{category.description}</p>}
-                        <p className="text-xs text-slate-400 mt-2">Created: {new Date(category.created_at).toLocaleDateString()}</p>
+                        {category.description && (
+                          <p className="text-sm text-slate-500 mt-2">
+                            {category.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-400 mt-2">
+                          Created:{" "}
+                          {new Date(category.created_at).toLocaleDateString()}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleEdit(category)} className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors" title="Edit category">
+                        <button
+                          onClick={() => handleEdit(category)}
+                          className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+                          title="Edit category"
+                        >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(category)} disabled={deleteMutation.isPending} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50" title="Delete category">
+                        <button
+                          onClick={() => handleDelete(category)}
+                          disabled={deleteMutation.isPending}
+                          className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                          title="Delete category"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -313,7 +375,10 @@ export default function ManageCategories() {
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}
-          onCancel={() => { setShowDeleteModal(false); setCategoryToDelete(null); }}
+          onCancel={() => {
+            setShowDeleteModal(false);
+            setCategoryToDelete(null);
+          }}
           variant="danger"
         />
       </div>

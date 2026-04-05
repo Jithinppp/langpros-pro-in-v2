@@ -1,4 +1,0 @@
-src\pages\inventory-manager\AddEquipment.tsx
-src\pages\inventory-manager\Equipments.tsx
-src\pages\inventory-manager\ImportEquipment.tsx
-src\pages\inventory-manager\SingleEquipment.tsx

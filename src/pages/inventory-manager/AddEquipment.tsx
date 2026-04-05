@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -98,6 +96,7 @@ export default function AddEquipment() {
     setRemarks,
     setIsSubmitting,
     setErrors,
+    clearError,
     setSubmitError,
     setSuccessMessage,
     reset,
@@ -258,6 +257,10 @@ export default function AddEquipment() {
     setSubcategoryId("");
     setModelId("");
     setGeneratedSku("");
+    clearError("category");
+    clearError("subcategory");
+    clearError("model");
+    clearError("sku");
   };
 
   useEffect(() => {
@@ -306,10 +309,15 @@ export default function AddEquipment() {
     setSubcategoryId(value);
     setModelId("");
     setGeneratedSku("");
+    clearError("subcategory");
+    clearError("model");
+    clearError("sku");
   };
 
   const handleModelChange = (value: string) => {
     setModelId(value);
+    clearError("model");
+    clearError("sku");
   };
 
   const createAssetMutation = useMutation({
@@ -404,9 +412,9 @@ export default function AddEquipment() {
 
   if (loadingCategories) {
     return (
-      <div className="min-h-[100dvh] bg-[#FAFAFA] flex flex-col items-center justify-center">
+      <div className="min-h-dvh bg-[#FAFAFA] flex flex-col items-center justify-center">
         <Loading className="w-10 h-10" color="border-slate-900" />
-        <p className="text-sm text-slate-400 mt-4">Loading configuration...</p>
+        <p className="text-sm text-slate-400 mt-4">Loading...</p>
       </div>
     );
   }
@@ -532,13 +540,18 @@ export default function AddEquipment() {
                 <Input
                   label="Serial Number"
                   value={serialNumber}
-                  onChange={(e) => setSerialNumber(e.target.value)}
+                  onChange={(e) => {
+                    setSerialNumber(e.target.value);
+                  }}
                   placeholder="Enter serial number"
                 />
                 <SelectDropdown
                   label="Location"
                   value={storageLocationId || ""}
-                  onChange={setStorageLocationId}
+                  onChange={(value) => {
+                    setStorageLocationId(value);
+                    clearError("location");
+                  }}
                   options={storageLocations.map((l) => ({
                     value: l.id,
                     label: l.name,
@@ -614,9 +627,9 @@ export default function AddEquipment() {
                 <div></div>
               </div>
 
-              {/* Line 8: Warranty Expiry Date (full width when shown) */}
+              {/* Line 8: Warranty Expiry Date (half width when shown) */}
               {hasWarranty && (
-                <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-slate-700">
                       Warranty Expiry
@@ -624,7 +637,10 @@ export default function AddEquipment() {
                     <input
                       type="date"
                       value={warrantyExpiry}
-                      onChange={(e) => setWarrantyExpiry(e.target.value)}
+                      onChange={(e) => {
+                        setWarrantyExpiry(e.target.value);
+                        clearError("warrantyExpiry");
+                      }}
                       min={purchaseDate}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-900/5 transition-all duration-300"
                     />
@@ -634,6 +650,7 @@ export default function AddEquipment() {
                       {errors.warrantyExpiry}
                     </p>
                   )}
+                  <div></div>
                 </div>
               )}
 
@@ -684,7 +701,10 @@ export default function AddEquipment() {
                   step="0.01"
                   min="0"
                   value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
+                  onChange={(e) => {
+                    setWeight(e.target.value);
+                    clearError("weight");
+                  }}
                   placeholder="Enter weight in kg"
                   error={errors.weight}
                 />
@@ -693,7 +713,10 @@ export default function AddEquipment() {
                   type="number"
                   min="0"
                   value={caseNumber}
-                  onChange={(e) => setCaseNumber(e.target.value)}
+                  onChange={(e) => {
+                    setCaseNumber(e.target.value);
+                    clearError("caseNumber");
+                  }}
                   placeholder="Enter case number"
                   error={errors.caseNumber}
                 />
@@ -763,7 +786,7 @@ export default function AddEquipment() {
 
           {/* Submit Button */}
           <div className="flex items-center justify-end gap-4 pt-6 border-t border-slate-200/60">
-            <Link to="/inventory-manager/equipments">
+            <Link to="/inventory-manager">
               <Button variant="secondary" type="button">
                 Cancel
               </Button>

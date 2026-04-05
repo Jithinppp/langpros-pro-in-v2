@@ -61,10 +61,10 @@ export default function SelectDropdown({
         <div className="relative">
           <ListboxButton
             className={`relative w-full cursor-default rounded-lg bg-white border text-left outline-none transition-all duration-300 focus:ring-1 focus:ring-gray-300 focus:border-gray-400 ${
-              isDisabled 
-                ? "bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200" 
+              isDisabled
+                ? "bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200"
                 : error
-                  ? "border-red-300 focus:border-red-400 focus:ring-red-500/10"
+                  ? "border-red-300 border-2 focus:border-red-400 focus:ring-red-500/10"
                   : "border-gray-300"
             } ${selected ? "text-gray-900" : "text-gray-400"} ${btnSizeClasses[size]}`}
           >
@@ -92,7 +92,9 @@ export default function SelectDropdown({
           >
             <ListboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 border border-gray-200 focus:outline-none text-sm">
               {options.length === 0 ? (
-                <div className="text-gray-500 py-3 px-5 text-sm">{emptyMessage}</div>
+                <div className="text-gray-500 py-3 px-5 text-sm">
+                  {emptyMessage}
+                </div>
               ) : (
                 options.map((opt) => (
                   <ListboxOption
@@ -106,7 +108,9 @@ export default function SelectDropdown({
                   >
                     {({ selected: isSelected }) => (
                       <>
-                        <span className={`block truncate ${isSelected ? "font-medium text-gray-900" : "font-normal"}`}>
+                        <span
+                          className={`block truncate ${isSelected ? "font-medium text-gray-900" : "font-normal"}`}
+                        >
                           {opt.label}
                         </span>
                         {isSelected && showCheckmark && (
@@ -123,7 +127,9 @@ export default function SelectDropdown({
           </Transition>
         </div>
       </Listbox>
-      {error && <p className="text-xs font-medium text-red-500 ml-1">{error}</p>}
+      {error && (
+        <p className="text-xs font-medium text-red-500 ml-1">{error}</p>
+      )}
     </div>
   );
 }

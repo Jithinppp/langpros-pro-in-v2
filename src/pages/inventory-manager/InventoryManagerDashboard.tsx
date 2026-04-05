@@ -11,7 +11,6 @@ import {
   Activity,
   Import,
   BarChart3,
-  FolderOpen,
   ArrowUpRight,
 } from "lucide-react";
 
@@ -162,6 +161,12 @@ export default function InventoryManagerDashboard() {
 
   const actions = [
     {
+      to: "/inventory-manager/equipments",
+      icon: <List className="w-5 h-5" />,
+      label: "All Equipment",
+      desc: "Browse catalog",
+    },
+    {
       to: "/inventory-manager/add-equipment",
       icon: <Plus className="w-5 h-5" />,
       label: "Add Equipment",
@@ -173,12 +178,7 @@ export default function InventoryManagerDashboard() {
       label: "Import",
       desc: "Bulk import via CSV",
     },
-    {
-      to: "/inventory-manager/equipments",
-      icon: <List className="w-5 h-5" />,
-      label: "All Equipment",
-      desc: "Browse catalog",
-    },
+
     {
       to: "/inventory-manager/archive",
       icon: <ArchiveIcon className="w-5 h-5" />,
@@ -197,16 +197,10 @@ export default function InventoryManagerDashboard() {
       label: "Reports",
       desc: "Analytics & exports",
     },
-    {
-      to: "/inventory-manager/manage-categories",
-      icon: <FolderOpen className="w-5 h-5" />,
-      label: "Categories",
-      desc: "Manage structure",
-    },
   ];
 
   return (
-    <div className="min-h-[100dvh] bg-[#FAFAFA] font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
+    <div className="min-h-dvh bg-[#FAFAFA] font-['system-ui','SF_Pro_Display','Geist_Sans','Helvetica_Neue',sans-serif]">
       {/* Noise overlay - fixed */}
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:px-8 md:py-16 lg:py-20">
@@ -329,28 +323,10 @@ export default function InventoryManagerDashboard() {
         <footer className="mt-16 pt-8 border-t border-slate-200/60">
           <div className="flex items-center gap-2 text-[10px] text-slate-400 uppercase tracking-widest">
             <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-            <span>Inventory Manager</span>
-            <span className="mx-1">·</span>
-            <span>LangPros Pro</span>
+            <span>Copyright 2026 | Langpros Language Solutions</span>
           </div>
         </footer>
       </div>
-
-      <style>{`
-        @keyframes fade-up {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-up {
-          animation: fade-up 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-        }
-      `}</style>
     </div>
   );
 }

@@ -473,14 +473,14 @@ export default function EquipmentsPage() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">
               All Equipments
             </h2>
-            <p className="text-gray-500 mt-1">
+            <p className="text-slate-500 mt-2 text-sm">
               View and manage your inventory ({totalCount} total)
             </p>
           </div>
           <div className="flex gap-2">
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
               onClick={handleExport}
               disabled={isExporting}
               className="flex items-center gap-1 w-full md:w-auto"
@@ -568,7 +568,10 @@ export default function EquipmentsPage() {
                 onChange={handleSubcategoryChange}
                 options={[
                   { value: "", label: "All Subcategories" },
-                  ...filteredSubcategories.map((s) => ({ value: s.id, label: s.name })),
+                  ...filteredSubcategories.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                  })),
                 ]}
                 placeholder="All Subcategories"
                 loading={loadingSubcategories}
@@ -582,7 +585,10 @@ export default function EquipmentsPage() {
                 onChange={setModelId}
                 options={[
                   { value: "", label: "All Models" },
-                  ...filteredModels.map((m) => ({ value: m.id, label: `${m.name} (${m.brand})` })),
+                  ...filteredModels.map((m) => ({
+                    value: m.id,
+                    label: `${m.name} (${m.brand})`,
+                  })),
                 ]}
                 placeholder="All Models"
                 loading={loadingModels}
@@ -599,7 +605,10 @@ export default function EquipmentsPage() {
                 }}
                 options={[
                   { value: "", label: "All Locations" },
-                  ...storageLocations.map((l) => ({ value: l.id, label: l.name })),
+                  ...storageLocations.map((l) => ({
+                    value: l.id,
+                    label: l.name,
+                  })),
                 ]}
                 placeholder="All Locations"
                 loading={loadingLocations}
@@ -745,7 +754,7 @@ export default function EquipmentsPage() {
             <h3 className="text-xl font-bold text-gray-900 mb-2">
               No assets found
             </h3>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+            <p className="mb-6 max-w-sm mx-auto text-slate-500 mt-2 text-sm">
               {searchQuery || hasActiveFilters
                 ? "We couldn't find anything matching your search or filters. Try adjusting your filters."
                 : "Your inventory is currently empty. Get started by adding your first asset to the system."}
