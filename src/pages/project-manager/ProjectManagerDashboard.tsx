@@ -11,7 +11,6 @@ import {
   Users,
   BarChart3,
   Clock,
-  FolderOpen,
   PackagePlus,
 } from "lucide-react";
 

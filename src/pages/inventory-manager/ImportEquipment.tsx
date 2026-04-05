@@ -1,5 +1,4 @@
 import { useState, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
@@ -799,90 +798,120 @@ export default function ImportEquipment() {
 
                 {parsedData.length > 0 && (
                   <div>
-                  <div className="overflow-x-auto mb-4">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-gray-50 text-gray-500">
-                        <tr>
-                          <th className="px-4 py-2 whitespace-nowrap">#</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Serial Number</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Location</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Condition</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Status</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Description</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Purchase Date</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Warranty Expiry</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Supplier</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Case #</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Weight</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Invoice #</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Remarks</th>
-                          <th className="px-4 py-2 whitespace-nowrap">Validation</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {csvPaginatedData.map((row) => (
-                          <tr
-                            key={row.rowNumber}
-                            className={row.isValid ? "" : "bg-red-50"}
-                          >
-                            <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
-                              {row.rowNumber}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.serial_number || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">{row.location_name}</td>
-                            <td className="px-4 py-2 capitalize whitespace-nowrap">
-                              {row.condition}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">available</td>
-                            <td className="px-4 py-2 whitespace-nowrap max-w-[200px] truncate">
-                              {row.description || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.purchase_date || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.warranty_expiry || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.supplier_name || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.case_number || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.weight || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.invoice_number || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap max-w-[200px] truncate">
-                              {row.remarks || "-"}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              {row.errors.length > 0 ? (
-                                <span className="text-red-600 text-xs">
-                                  {row.errors.join(", ")}
-                                </span>
-                              ) : (
-                                <span className="text-green-600 text-xs">
-                                  Valid
-                                </span>
-                              )}
-                            </td>
+                    <div className="overflow-x-auto mb-4">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 text-gray-500">
+                          <tr>
+                            <th className="px-4 py-2 whitespace-nowrap">#</th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Serial Number
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Location
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Condition
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Status
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Description
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Purchase Date
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Warranty Expiry
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Supplier
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Case #
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Weight
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Invoice #
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Remarks
+                            </th>
+                            <th className="px-4 py-2 whitespace-nowrap">
+                              Validation
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {csvPaginatedData.map((row) => (
+                            <tr
+                              key={row.rowNumber}
+                              className={row.isValid ? "" : "bg-red-50"}
+                            >
+                              <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                                {row.rowNumber}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.serial_number || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.location_name}
+                              </td>
+                              <td className="px-4 py-2 capitalize whitespace-nowrap">
+                                {row.condition}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                available
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap max-w-[200px] truncate">
+                                {row.description || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.purchase_date || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.warranty_expiry || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.supplier_name || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.case_number || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.weight || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.invoice_number || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap max-w-[200px] truncate">
+                                {row.remarks || "-"}
+                              </td>
+                              <td className="px-4 py-2 whitespace-nowrap">
+                                {row.errors.length > 0 ? (
+                                  <span className="text-red-600 text-xs">
+                                    {row.errors.join(", ")}
+                                  </span>
+                                ) : (
+                                  <span className="text-green-600 text-xs">
+                                    Valid
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
 
-                  <Pagination
-                    currentPage={csvPage}
-                    totalPages={csvTotalPages}
-                    onPageChange={setCsvPage}
-                  />
-                </div>
+                    <Pagination
+                      currentPage={csvPage}
+                      totalPages={csvTotalPages}
+                      onPageChange={setCsvPage}
+                    />
+                  </div>
                 )}
 
                 {importResult ? (
@@ -919,7 +948,9 @@ export default function ImportEquipment() {
                         `Import ${validRowsCount} Items`
                       )}
                     </Button>
-                    <Button variant="secondary" onClick={resetImport}>Cancel</Button>
+                    <Button variant="secondary" onClick={resetImport}>
+                      Cancel
+                    </Button>
                   </div>
                 )}
               </div>
