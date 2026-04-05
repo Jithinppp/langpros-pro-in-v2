@@ -132,26 +132,33 @@ export default function InventoryManagerDashboard() {
   const { data: stats, isLoading } = useQuery<Stats>({
     queryKey: ["assets-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { count: totalCount, error: totalError } = await supabase
         .from("assets")
-        .select("status")
+        .select("*", { count: "exact", head: true })
         .eq("is_active", true);
 
-      if (error) throw error;
+      if (totalError) throw totalError;
 
-      const allStatuses = data?.map((d) => d.status) || [];
-      const maintenanceCount = allStatuses.filter(
-        (s) => s === "maintenance",
-      ).length;
-      const damagedCount = allStatuses.filter((s) => s === "damaged").length;
-      const availableCount = allStatuses.filter(
-        (s) => s === "available",
-      ).length;
+      const { count: availableCount, error: availableError } = await supabase
+        .from("assets")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true)
+        .eq("status", "available");
+
+      if (availableError) throw availableError;
+
+      const { count: maintenanceCount, error: maintenanceError } = await supabase
+        .from("assets")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true)
+        .eq("status", "maintenance");
+
+      if (maintenanceError) throw maintenanceError;
 
       return {
-        total: allStatuses.length,
-        damaged: damagedCount + maintenanceCount,
-        available: availableCount,
+        total: totalCount || 0,
+        damaged: maintenanceCount || 0,
+        available: availableCount || 0,
       };
     },
     staleTime: 60000,

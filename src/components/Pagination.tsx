@@ -1,56 +1,39 @@
-import Button from "./Button";
-
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  startItem?: number;
-  endItem?: number;
-  totalItems?: number;
-  variant?: "simple" | "detailed";
+  showPageText?: boolean;
 }
 
 export default function Pagination({
   currentPage,
   totalPages,
   onPageChange,
-  startItem,
-  endItem,
-  totalItems,
-  variant = "simple",
+  showPageText = true,
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between mt-8 pt-8 border-t border-slate-100">
-      {variant === "detailed" && startItem !== undefined && endItem !== undefined && totalItems !== undefined ? (
-        <div className="text-xs text-slate-400 uppercase tracking-wider">
-          Showing <span className="text-slate-600 font-medium">{startItem}</span> to <span className="text-slate-600 font-medium">{endItem}</span> of <span className="text-slate-600 font-medium">{totalItems}</span> results
-        </div>
-      ) : (
-        <div />
-      )}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
-        <span className="text-xs text-slate-500 px-2 font-medium min-w-[80px] text-center">
-          {currentPage} / {totalPages}
+    <div className="flex justify-center items-center gap-3 mt-8 pt-6 border-t border-gray-100">
+      <button
+        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        disabled={currentPage === 1}
+        className="px-5 py-1.5 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        Previous
+      </button>
+      {showPageText && (
+        <span className="text-sm text-gray-500">
+          Page {currentPage} of {totalPages}
         </span>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </Button>
-      </div>
+      )}
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage === totalPages}
+        className="px-5 py-1.5 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        Next
+      </button>
     </div>
   );
 }

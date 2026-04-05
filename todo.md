@@ -2,6 +2,7 @@
 
 1. Fix archive page - Delete functionality and restore functionality
 2. Fix Reports page - analytics and generate reports and export data based on different tables and rules/condition/status
+3. Manage cases and case/flight case assign to equipments bulk as well
 
 ## Tech
 

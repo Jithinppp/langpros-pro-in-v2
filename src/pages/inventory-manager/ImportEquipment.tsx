@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { parseCSV } from "../../utils/csv";
+import Pagination from "../../components/Pagination";
 
 interface Category {
   id: string;
@@ -75,6 +76,7 @@ const MAX_IMPORT_ROWS = 5000;
 
 export default function ImportEquipment() {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [modelId, setModelId] = useState("");
@@ -230,8 +232,13 @@ export default function ImportEquipment() {
 
       setFileError("");
       const data: ParsedRow[] = [];
+      const allKeys = Object.keys(rows[0]);
+      const hasAllValues = (row: Record<string, string>) =>
+        allKeys.some((key) => row[key]?.trim());
+      let rowNumber = 1;
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
+        if (!hasAllValues(row)) continue;
         const rowErrors: string[] = [];
         const locationName = row.location_name;
         const location = storageLocations.find(
@@ -263,11 +270,12 @@ export default function ImportEquipment() {
           weight: row.weight || "",
           invoice_number: row.invoice_number || "",
           remarks: row.remarks || "",
-          rowNumber: i + 1,
+          rowNumber,
           locationId: location?.id,
           errors: rowErrors,
           isValid: rowErrors.length === 0,
         });
+        rowNumber++;
       }
 
       setParsedData(data);
@@ -278,6 +286,8 @@ export default function ImportEquipment() {
   const handleFileChange = (file: File | null) => {
     setFileError("");
     setCsvPage(1);
+    setParsedData([]);
+    setImportResult(null);
     if (file) {
       if (!file.name.toLowerCase().endsWith(".csv")) {
         setFileError("Only CSV files are accepted. Please upload a CSV file.");
@@ -285,7 +295,9 @@ export default function ImportEquipment() {
       }
       setCsvFile(file);
       parseCSVData(file);
-      setImportResult(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -401,9 +413,18 @@ export default function ImportEquipment() {
     onSuccess: (result) => {
       setImportResult(result);
       setImporting(false);
+      setCategoryId("");
+      setSubcategoryId("");
+      setModelId("");
+      setCsvFile(null);
+      setParsedData([]);
+      setImportProgress(0);
+      setFileError("");
+      setCsvPage(1);
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       queryClient.invalidateQueries({ queryKey: ["assets_paginated"] });
       queryClient.invalidateQueries({ queryKey: ["assets-stats"] });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     onError: (error) => {
       setImportError(
@@ -427,10 +448,14 @@ export default function ImportEquipment() {
   );
 
   const resetImport = () => {
+    setCategoryId("");
+    setSubcategoryId("");
+    setModelId("");
     setCsvFile(null);
     setParsedData([]);
     setImportResult(null);
     setImportProgress(0);
+    setImporting(false);
     setFileError("");
     setImportError("");
     setCsvPage(1);
@@ -721,6 +746,7 @@ export default function ImportEquipment() {
                 <label className="transition-all duration-300 inline-flex items-center justify-center px-4 py-2 font-medium rounded-xl mt-4 cursor-pointer bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-900/20 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.2)]">
                   Select File
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept=".csv"
                     onChange={(e) =>
@@ -772,16 +798,25 @@ export default function ImportEquipment() {
                 )}
 
                 {parsedData.length > 0 && (
+                  <div>
                   <div className="overflow-x-auto mb-4">
                     <table className="w-full text-sm text-left">
                       <thead className="bg-gray-50 text-gray-500">
                         <tr>
-                          <th className="px-4 py-2">#</th>
-                          <th className="px-4 py-2">Serial Number</th>
-                          <th className="px-4 py-2">Location</th>
-                          <th className="px-4 py-2">Condition</th>
-                          <th className="px-4 py-2">Status</th>
-                          <th className="px-4 py-2">Validation</th>
+                          <th className="px-4 py-2 whitespace-nowrap">#</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Serial Number</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Location</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Condition</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Status</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Description</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Purchase Date</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Warranty Expiry</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Supplier</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Case #</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Weight</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Invoice #</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Remarks</th>
+                          <th className="px-4 py-2 whitespace-nowrap">Validation</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -790,18 +825,42 @@ export default function ImportEquipment() {
                             key={row.rowNumber}
                             className={row.isValid ? "" : "bg-red-50"}
                           >
-                            <td className="px-4 py-2 text-gray-500">
+                            <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
                               {row.rowNumber}
                             </td>
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-2 whitespace-nowrap">
                               {row.serial_number || "-"}
                             </td>
-                            <td className="px-4 py-2">{row.location_name}</td>
-                            <td className="px-4 py-2 capitalize">
+                            <td className="px-4 py-2 whitespace-nowrap">{row.location_name}</td>
+                            <td className="px-4 py-2 capitalize whitespace-nowrap">
                               {row.condition}
                             </td>
-                            <td className="px-4 py-2">available</td>
-                            <td className="px-4 py-2">
+                            <td className="px-4 py-2 whitespace-nowrap">available</td>
+                            <td className="px-4 py-2 whitespace-nowrap max-w-[200px] truncate">
+                              {row.description || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {row.purchase_date || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {row.warranty_expiry || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {row.supplier_name || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {row.case_number || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {row.weight || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              {row.invoice_number || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap max-w-[200px] truncate">
+                              {row.remarks || "-"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap">
                               {row.errors.length > 0 ? (
                                 <span className="text-red-600 text-xs">
                                   {row.errors.join(", ")}
@@ -816,54 +875,14 @@ export default function ImportEquipment() {
                         ))}
                       </tbody>
                     </table>
-
-                    {csvTotalPages > 1 && (
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                        <div className="text-sm text-gray-500">
-                          Showing {csvStartIndex + 1} to{" "}
-                          {Math.min(
-                            csvStartIndex + CSV_PAGE_SIZE,
-                            parsedData.length,
-                          )}{" "}
-                          of {parsedData.length} rows
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {csvPage > 1 && (
-                            <button
-                              onClick={() => setCsvPage((p) => p - 1)}
-                              className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                            >
-                              Previous
-                            </button>
-                          )}
-                          {Array.from(
-                            { length: csvTotalPages },
-                            (_, i) => i + 1,
-                          ).map((page) => (
-                            <button
-                              key={page}
-                              onClick={() => setCsvPage(page)}
-                              className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                                csvPage === page
-                                  ? "bg-[#0f172b] text-white border border-[#0f172b]"
-                                  : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          ))}
-                          {csvPage < csvTotalPages && (
-                            <button
-                              onClick={() => setCsvPage((p) => p + 1)}
-                              className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-                            >
-                              Next
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
+
+                  <Pagination
+                    currentPage={csvPage}
+                    totalPages={csvTotalPages}
+                    onPageChange={setCsvPage}
+                  />
+                </div>
                 )}
 
                 {importResult ? (
@@ -900,9 +919,7 @@ export default function ImportEquipment() {
                         `Import ${validRowsCount} Items`
                       )}
                     </Button>
-                    <Link to="/inventory-manager/add-equipment">
-                      <Button variant="secondary">Cancel</Button>
-                    </Link>
+                    <Button variant="secondary" onClick={resetImport}>Cancel</Button>
                   </div>
                 )}
               </div>
