@@ -1,29 +1,13 @@
 import { Link } from "react-router-dom";
+import Button from "../components/Button";
 
 const NotFoundPage = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-white">
-      <div className="text-center">
-        {/* 404 Number */}
-        <h1 className="text-[120px] font-bold text-[#1769ff] leading-none">
-          404
-        </h1>
-
-        {/* Message */}
-        <h2 className="text-2xl font-semibold text-gray-900 mt-4">
-          Page not found
-        </h2>
-        <p className="text-gray-500 mt-2 mb-8">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-
-        {/* Back to Home */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-[#1769ff] hover:bg-[#0052cc] text-white font-medium rounded-lg transition-colors"
-        >
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="p-16 text-center bg-gray-50/50">
+        <div className="w-16 h-16 bg-white border border-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <svg
-            className="w-5 h-5"
+            className="w-8 h-8 text-gray-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -32,10 +16,16 @@ const NotFoundPage = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          Back to home
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Page not found</h3>
+        <p className="mb-6 max-w-sm mx-auto text-slate-500 mt-2 text-sm">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
+        <Link to="/">
+          <Button variant="primary">Back to home</Button>
         </Link>
       </div>
     </div>

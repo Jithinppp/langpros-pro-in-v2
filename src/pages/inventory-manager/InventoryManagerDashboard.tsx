@@ -214,7 +214,7 @@ export default function InventoryManagerDashboard() {
                 </span>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-slate-900 tracking-tight leading-[1.05]">
-                Hi {roleTitle} manager 👋
+                Hi {roleTitle} Manager 👋
               </h1>
               <p className="text-sm text-slate-500 mt-4 max-w-md font-normal">
                 Track and manage your inventory
