@@ -35,7 +35,7 @@ function StatsCard({
 }) {
   return (
     <div
-      className="group relative overflow-hidden bg-white border border-slate-200/50 rounded-[2rem] p-8 shadow-[0_2px_24px_-8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1"
+      className="group relative overflow-hidden bg-white border border-slate-200/50 rounded-4xl p-8 shadow-[0_2px_24px_-8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] hover:-translate-y-1"
       style={{
         animationDelay: `${delay}ms`,
         transition:
@@ -43,7 +43,7 @@ function StatsCard({
       }}
     >
       <div
-        className="absolute inset-0 bg-gradient-to-br from-slate-50/80 via-transparent to-white/40 opacity-0 group-hover:opacity-100"
+        className="absolute inset-0 bg-linear-to-br from-slate-50/80 via-transparent to-white/40 opacity-0 group-hover:opacity-100"
         style={{ transition: "opacity 0.7s cubic-bezier(0.32,0.72,0,1)" }}
       />
 
@@ -68,7 +68,7 @@ function StatsCard({
       </div>
 
       <div
-        className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent opacity-0 group-hover:opacity-100"
+        className="absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-slate-200/60 to-transparent opacity-0 group-hover:opacity-100"
         style={{ transition: "opacity 0.7s" }}
       />
     </div>
@@ -85,7 +85,7 @@ function ActionCard({
   return (
     <Link
       to={action.to}
-      className="group block relative overflow-hidden bg-white border border-slate-200/50 rounded-[2rem] p-6 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_32px_-10px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:scale-[0.98]"
+      className="group block relative overflow-hidden bg-white border border-slate-200/50 rounded-4xl p-6 shadow-[0_2px_20px_-8px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_32px_-10px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 active:scale-[0.98]"
       style={{
         animationDelay: `${delay}ms`,
         transition:
@@ -93,7 +93,7 @@ function ActionCard({
       }}
     >
       <div
-        className="absolute inset-0 bg-gradient-to-br from-slate-50/60 via-transparent to-white/50 opacity-0 group-hover:opacity-100"
+        className="absolute inset-0 bg-linear-to-br from-slate-50/60 via-transparent to-white/50 opacity-0 group-hover:opacity-100"
         style={{ transition: "opacity 0.5s cubic-bezier(0.32,0.72,0,1)" }}
       />
 
