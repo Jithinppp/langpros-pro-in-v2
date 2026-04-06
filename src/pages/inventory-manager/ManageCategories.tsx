@@ -208,6 +208,7 @@ export default function ManageCategories() {
               placeholder="e.g., LAP"
               maxLength={10}
               helperText="No spaces or special characters"
+              className="uppercase font-mono"
               {...addForm.register("code")}
               error={addForm.formState.errors.code?.message}
             />
@@ -292,6 +293,7 @@ export default function ManageCategories() {
                           placeholder="Code"
                           maxLength={10}
                           helperText="e.g., LAP"
+                          className="uppercase font-mono"
                           {...editForm.register("code")}
                           error={editForm.formState.errors.code?.message}
                         />

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import Button from "../../components/Button";
@@ -323,7 +324,7 @@ export default function ImportEquipment() {
     const headers =
       "serial_number,location_name,condition,description,purchase_date,warranty_expiry,supplier_name,case_number,weight,invoice_number,remarks";
     const exampleRow =
-      ",Warehouse-A,excellent,Optional description,2024-01-01,2025-01-01,Supplier Co.,123,50,INV-001,Some remarks";
+      ",Warehouse-A,excellent,Optional description,2024-01-01,2025-01-01,Supplier Co.,123,50.5,INV-001,Some remarks";
     const csv = `${headers}\n${exampleRow}`;
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -387,7 +388,7 @@ export default function ImportEquipment() {
           warranty_expiry: row.warranty_expiry ? row.warranty_expiry : null,
           supplier_name: row.supplier_name || null,
           case_number: row.case_number ? parseInt(row.case_number, 10) : null,
-          weight: row.weight ? parseInt(row.weight, 10) : null,
+          weight: row.weight ? parseFloat(row.weight) : null,
           invoice_number: row.invoice_number || null,
           remarks: row.remarks || null,
           is_active: true,
@@ -1027,12 +1028,12 @@ export default function ImportEquipment() {
                       Must match an existing storage location name exactly.
                       Available:{" "}
                       {storageLocations.map((l, i) => (
-                        <>
-                          <code key={l.id} className="bg-gray-100 px-1 rounded">
+                        <Fragment key={l.id}>
+                          <code className="bg-gray-100 px-1 rounded">
                             {l.name}
                           </code>
                           {i < storageLocations.length - 1 && ", "}
-                        </>
+                        </Fragment>
                       ))}
                     </td>
                   </tr>
@@ -1129,7 +1130,7 @@ export default function ImportEquipment() {
                       </code>
                     </td>
                     <td className="py-2 pr-4 text-gray-500">No</td>
-                    <td className="py-2 pr-4 text-gray-500">Integer</td>
+                    <td className="py-2 pr-4 text-gray-500">Float</td>
                     <td className="py-2 text-gray-500">
                       Weight of the equipment item in kg
                     </td>

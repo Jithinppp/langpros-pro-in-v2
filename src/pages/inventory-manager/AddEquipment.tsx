@@ -350,6 +350,7 @@ export default function AddEquipment() {
     },
     onError: (error) => {
       console.error("Error creating asset:", error);
+      setIsSubmitting(false);
       setSubmitError("Failed to create asset. Please try again.");
     },
   });

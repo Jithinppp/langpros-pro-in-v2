@@ -49,6 +49,11 @@ export interface Asset {
   description: string;
   created_at: string;
   model_id: string;
+  supplier_name: string | null;
+  invoice_number: string | null;
+  weight: number | null;
+  case_number: number | null;
+  remarks: string | null;
   models?: {
     name: string;
     brand: string;
@@ -229,6 +234,11 @@ export default function EquipmentsPage() {
           description,
           created_at,
           model_id,
+          supplier_name,
+          invoice_number,
+          weight,
+          case_number,
+          remarks,
           models:model_id(name, brand, code, subcategory_id),
           storage_locations:location(name)
         `,
@@ -687,20 +697,44 @@ export default function EquipmentsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
                     SKU
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Serial Number
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
                     Model
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
                     Location
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
                     Condition
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
                     Status
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Purchase Date
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Warranty Expiry
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Supplier
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Invoice #
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Weight (kg)
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Case #
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase px-4 py-3 whitespace-nowrap">
+                    Remarks
                   </th>
                 </tr>
               </thead>
@@ -713,30 +747,54 @@ export default function EquipmentsPage() {
                       navigate(`/inventory-manager/equipments/${asset.id}`)
                     }
                   >
-                    <td className="px-4 py-3 text-sm text-gray-900 font-mono font-semibold">
+                    <td className="px-4 py-3 text-sm text-gray-900 font-mono font-semibold whitespace-nowrap">
                       {asset.sku}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      {asset.serial_number || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                       {asset.models
                         ? `${asset.models.name} (${asset.models.brand})`
                         : "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
                       {asset.storage_locations?.name || "-"}
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">
                       <span className={getConditionColor(asset.condition)}>
                         {asset.condition
                           ? asset.condition.replace("_", " ")
                           : "Unknown"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-lg capitalize tracking-wide ${getStatusColor(asset.status)}`}
                       >
                         {asset.status || "Unknown"}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {asset.purchase_date || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {asset.warranty_expiry || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {asset.supplier_name || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {asset.invoice_number || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {asset.weight?.toFixed(2) || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {asset.case_number || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate">
+                      {asset.remarks || "-"}
                     </td>
                   </tr>
                 ))}

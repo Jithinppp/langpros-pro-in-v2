@@ -294,6 +294,7 @@ export default function ManageSubcategories() {
               placeholder="e.g., LAPTOP"
               maxLength={10}
               helperText="No spaces or special characters"
+              className="uppercase font-mono"
               {...addForm.register("code")}
               error={addForm.formState.errors.code?.message}
             />
@@ -386,6 +387,7 @@ export default function ManageSubcategories() {
                           placeholder="Code"
                           maxLength={10}
                           helperText="e.g., LAPTOP"
+                          className="uppercase font-mono"
                           {...editForm.register("code")}
                           error={editForm.formState.errors.code?.message}
                         />

@@ -382,9 +382,14 @@ export default function ManageModels() {
               label="Model Code"
               type="text"
               value={code}
-              onChange={(e) =>
+              onChange={(e) => {
+                setCode(e.target.value.replaceAll(" ", ""));
+                clearError("code");
+              }}
+              onBlur={(e) =>
                 setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
               }
+              className="uppercase font-mono"
               error={errors.code}
               placeholder="e.g., 300X"
               helperText="No spaces or special characters"
@@ -522,12 +527,14 @@ export default function ManageModels() {
                         type="text"
                         value={editCode}
                         onChange={(e) =>
+                          setEditCode(e.target.value.replaceAll(" ", ""))
+                        }
+                        onBlur={(e) =>
                           setEditCode(
-                            e.target.value
-                              .toUpperCase()
-                              .replace(/[^A-Z0-9]/g, ""),
+                            e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""),
                           )
                         }
+                        className="uppercase font-mono"
                         error={editErrors.code}
                         placeholder="Model code"
                         label="Code"
